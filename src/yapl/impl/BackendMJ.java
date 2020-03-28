@@ -97,6 +97,19 @@ public class BackendMJ implements BackendBinSM{
 		}
 	}
 	
+	/**
+	 * Emits code for comparison Operation jumps
+	 */
+	private void compOpJump() {
+		loadConst(0);
+		byte[] temp = intToByteArray(codeSize+8);
+		code.add((byte) 0x27);
+		code.add(temp[2]);
+		code.add(temp[3]);
+		codeSize += 3;
+		loadConst(1);
+	}
+	
 	/*--- implementation constants ---*/
 	
 	@Override
@@ -249,8 +262,8 @@ public class BackendMJ implements BackendBinSM{
 
 	@Override
 	public void arrayLength() {
-		// TODO Auto-generated method stub
-		
+		code.add((byte) 0x25);
+		codeSize++;
 	}
 
 	/*--- run-time I/O operations ---*/
@@ -275,14 +288,14 @@ public class BackendMJ implements BackendBinSM{
 	
 	@Override
 	public void neg() {
-		// TODO Auto-generated method stub
-		
+		code.add((byte) 0x1c);
+		codeSize++;
 	}
 
 	@Override
 	public void add() {
-		// TODO Auto-generated method stub
-		
+		code.add((byte) 0x17);
+		codeSize++;
 	}
 
 	@Override
@@ -299,60 +312,78 @@ public class BackendMJ implements BackendBinSM{
 
 	@Override
 	public void div() {
-		// TODO Auto-generated method stub
-		
+		code.add((byte) 0x1a);
+		codeSize++;
 	}
 
 	@Override
 	public void mod() {
-		// TODO Auto-generated method stub
-		
+		code.add((byte) 0x1b);
+		codeSize++;
 	}
 
 	/*--- logical operations ---*/
 	
 	@Override
 	public void and() {
-		// TODO Auto-generated method stub
-		
+		mul();
 	}
 
 	@Override
 	public void or() {
-		// TODO Auto-generated method stub
-		
+		add();
 	}
 
 	/*--- comparison operations ---*/
 	
 	@Override
 	public void isEqual() {
-		// TODO Auto-generated method stub
-		
+		code.add((byte) 0x28);
+		byte[] temp = intToByteArray(codeSize+11);
+		code.add(temp[2]);
+		code.add(temp[3]);
+		codeSize += 3;
+		compOpJump();
 	}
 
 	@Override
 	public void isLess() {
-		// TODO Auto-generated method stub
-		
+		code.add((byte) 0x2a);
+		byte[] temp = intToByteArray(codeSize+11);
+		code.add(temp[2]);
+		code.add(temp[3]);
+		codeSize += 3;
+		compOpJump();
 	}
 
 	@Override
 	public void isLessOrEqual() {
-		// TODO Auto-generated method stub
-		
+		code.add((byte) 0x2b);
+		byte[] temp = intToByteArray(codeSize+11);
+		code.add(temp[2]);
+		code.add(temp[3]);
+		codeSize += 3;
+		compOpJump();
 	}
 
 	@Override
 	public void isGreater() {
-		// TODO Auto-generated method stub
-		
+		code.add((byte) 0x2c);
+		byte[] temp = intToByteArray(codeSize+11);
+		code.add(temp[2]);
+		code.add(temp[3]);
+		codeSize += 3;
+		compOpJump();
 	}
 
 	@Override
 	public void isGreaterOrEqual() {
-		// TODO Auto-generated method stub
-		
+		code.add((byte) 0x2d);
+		byte[] temp = intToByteArray(codeSize+11);
+		code.add(temp[2]);
+		code.add(temp[3]);
+		codeSize += 3;
+		compOpJump();
 	}
 
 	/*--- jump instructions ---*/
@@ -409,7 +440,6 @@ public class BackendMJ implements BackendBinSM{
 		code.add((byte) 0x31);
 		code.add((byte) 0x2f);
 		codeSize += 2;
-		//backpatching();
 	}
 
 	@Override

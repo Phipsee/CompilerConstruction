@@ -2,6 +2,7 @@ package yapl.test.backend.sm;
 
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 
 import yapl.impl.BackendMJ;
 import yapl.interfaces.BackendBinSM;
@@ -91,5 +92,15 @@ public class Test5
 
         backend.writeObjectFile(new FileOutputStream(args[0]));
         System.out.println("wrote object file to " + args[0]);
+        
+//		Code for testing Code Coverage
+//		Remove before submission
+//        backend.writeObjectFile(new OutputStream() {
+//			
+//			@Override
+//			public void write(int b) throws IOException {
+//				System.out.println(b);
+//			}
+//		});
     }
 }
