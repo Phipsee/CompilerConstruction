@@ -1,0 +1,95 @@
+/**
+ * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
+ */
+options
+{
+  static = true;
+}
+
+PARSER_BEGIN(LL1Test)
+public class LL1Test
+{
+  public static void main(String args []) throws ParseException
+  {
+    LL1Test parser = new LL1Test(System.in);
+    while (true)
+    {
+      System.out.println("Reading from standard input...");
+      System.out.print("Enter an expression like \"1+(2+3)*4;\" :");
+      try
+      {
+        switch (LL1Test.one_line())
+        {
+          case 0 : 
+          System.out.println("OK.");
+          break;
+          case 1 : 
+          System.out.println("Goodbye.");
+          break;
+          default : 
+          break;
+        }
+      }
+      catch (Exception e)
+      {
+        System.out.println("NOK.");
+        System.out.println(e.getMessage());
+        LL1Test.ReInit(System.in);
+      }
+      catch (Error e)
+      {
+        System.out.println("Oops.");
+        System.out.println(e.getMessage());
+        break;
+      }
+    }
+  }
+}
+
+PARSER_END(LL1Test)
+
+SKIP :
+{
+  " "
+| "\r"
+| "\t"
+| "\n"
+}
+
+TOKEN :
+{
+  < a : "a" >
+| < b : "b" >
+| < c : "c" >
+}
+
+int one_line() :
+{}
+{
+  S() ";" 
+  {
+    return 0;
+  }
+| ";"
+  {
+    return 1;
+  }
+}
+
+void S() :
+{}
+{
+  (
+    LOOKAHEAD("a", { getToken(2).kind == a })
+    A()
+  | < a >
+  )
+  < c >
+}
+
+void A() :
+{}
+{
+  < a > A()
+| < b >
+}
