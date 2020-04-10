@@ -1,0 +1,27 @@
+/**
+ * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
+ */options{  static = true;}PARSER_BEGIN(Scanner)package yapl.impl.scanner;
+
+import java.io.*;
+
+public class Scanner{  public static void main(String args []) throws ParseException, FileNotFoundException  {    SimpleCharStream stream = new SimpleCharStream(new FileInputStream(args[0]));
+
+    Token t = null;
+    ScannerTokenManager tkMg = new ScannerTokenManager(stream);
+
+    do {
+		t = tkMg.getNextToken();
+		System.out.println(t.toString());
+  	} while (t.kind != EOF);    }}PARSER_END(Scanner)SKIP :{  " "| "\r"| "\t"| "\n"}TOKEN :{
+  < letter : [ "A"-"Z" ] | [ "a"-"z" ] | "_" >
+| < digit : [ "0"-"9" ] >
+| < otherchar : "+" | "-" | "*" | "/" | "." | "," | ";" | ":" | "!"
+			  | "?" | "=" | "#" | "%" | "<" | ">" | "$" | "(" | ")"
+			  | "[" | "]" | "{" | "}" | "\\" | "@" | "&" | "^" | "|">
+| < ident : < letter > ( < letter > | < digit > )* >
+| < number : < digit > ( < digit > )* >
+| < string : "\"" ( " " | < letter > | < digit > | < otherchar > )* "\"">}
+SPECIAL_TOKEN :
+{
+  < comment: "/*" (~[])* "*/">
+} 

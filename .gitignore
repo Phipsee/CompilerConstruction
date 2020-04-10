@@ -6,3 +6,5 @@ ant-bin/*
 lib/*
 *.txt
 *.mj
+javacc-7.0.5/
+.settings/
