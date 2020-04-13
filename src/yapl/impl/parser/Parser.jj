@@ -13,15 +13,59 @@ TOKEN :
 {
   //---KEYWORDS---
   < PROGRAM: "Program" >
+| < TRUTHVALUE: "True"|"False" >
+
+| < ANDOP : "And" >
+| < OROP: "Or" >
+| < NEWOP : "new" >
+
+| < IF : "If" >
+| < THEN : "Then" >
+| < ELSE : "Else" >
+| < ENDIF : "EndIf" >
+
+| < WHILE : "While" >
+| < DO : "Do" >
+| < ENDWHILE : "EndWhile" >
+
+| < RETURN : "Return" >
+| < WRITE : "Write" >
+| < BEGIN : "Begin" >
+| < END : "End" >
+
+| < INT : "int" >
+| < BOOL : "bool" >
+| < CONSTANT : "Const" >
+| < RECORD : "Record" >
+| < ENDRECORD : "EndRecord" >
+
+| < DECLARE : "Declare" >
+| < PROCEDURE : "Procedure" >
+
+| < VOID : "void" >
+| < DELIMITER : ";" >
+
+
   //---TOKENS---
+|  < openParenthesis : "(" >
+|  < closingParenthesis : ")" >
+
+| < openingBrackets : "[" >
+| < closingBrackets : " ]" >
+
+| < assignOp: ":=" >
+| < constAssignOp: "=" >
+
 | < letter : [ "A"-"Z" ] | [ "a"-"z" ] | "_" >
 | < digit : [ "0"-"9" ] >
-| < otherchar : "+" | "-" | "*" | "/" | "." | "," | ";" | ":" | "!"
-			  | "?" | "=" | "#" | "%" | "<" | ">" | "$" | "(" | ")"
-			  | "[" | "]" | "{" | "}" | "\\" | "@" | "&" | "^" | "|">
+| < otherchar : "+" | "-" | "*" | "/" | "." | "," | ";" | ":" | "!"|
+				"?" | "=" | "#" | "%" | "<" | ">" | "$" | "(" | ")"|
+				"[" | "]" | "{" | "}" | "\\" | "@" | "&" | "^" | "|" >
+			  
 | < ident : < letter > ( < letter > | < digit > )* >
 | < number : < digit > ( < digit > )* >
 | < string : "\"" ( " " | < letter > | < digit > | < otherchar > )* "\"">
+
 }
 
 SPECIAL_TOKEN :
@@ -29,11 +73,152 @@ SPECIAL_TOKEN :
   < comment: "/*" (~[])* "*/">
 } 
 
-String Program():
-{Token t;}
-{	< PROGRAM >
-	t = < ident > 
-	{
-	  return t.toString();
-	}
-}     
+void Literal(): {} {
+	< TRUTHVALUE >|< number >
+}
+
+void Selector(): { } {
+	( < openingBrackets > Expr() < closingBrackets >  | "." < ident > ) (Selector())?
+}
+
+void ArrayLen(): { } {
+	"#" < ident > (Selector())?
+}
+void PrimaryExpr() : { } {
+   Literal() | < openParenthesis >  Expr() < closingParenthesis >  |  (LOOKAHEAD("(", { getToken(1).kind == openParenthesis})ProcedureCall() | < ident > (Selector())? )| ArrayLen()
+}
+
+void UnaryExpr() : {} { 
+  (AddOp())? PrimaryExpr()
+}
+
+void MulExpr() : { } {
+  UnaryExpr() (MulOp() UnaryExpr())*
+}
+
+void AddExpr() : { } {
+   MulExpr() (AddOp() MulExpr())*
+}
+
+void RelExpr() : { } {
+  AddExpr() (RelOp() AddExpr())?
+}
+
+void EqualExpr() : { } {
+  RelExpr() (EqualOp()  RelExpr())?
+}
+
+void CondAndExpr() : { } {
+  EqualExpr() ( < ANDOP >  EqualExpr() )
+}
+
+void CreationExpr() : { } {
+  < NEWOP >   NonArrayType() ( < openingBrackets > Expr() < closingBrackets >  )*}
+
+void Expr() : { } {
+  CondAndExpr() ( < OROP > CondAndExpr() )* | CreationExpr()
+}
+
+void ArgumentList() : { } {
+  Expr() ( "," Expr() )*
+}
+
+void ProcedureCall() : { } {
+  <ident > < openParenthesis >  (ArgumentList())? < closingParenthesis > 
+}
+
+void Assignment() : { } {
+  < ident > ( Selector() )? < assignOp > Expr()
+}
+
+void IfStatement() : { } {
+  < IF > Expr() < THEN > StatementList() ( < ELSE > StatementList() )? < ENDIF > 
+}
+
+void WhileStatement() : { } {
+  < WHILE > Expr() < DO > StatementList() < ENDWHILE >  
+}
+
+void ReturnStatement() : { } {
+  < RETURN > ( Expr() )?
+}
+
+void WriteStatement() : { } {
+  < WRITE > < string >
+}
+
+void Statement() : { } {
+  IfStatement() | WhileStatement() | ReturnStatement() | WriteStatement() |(LOOKAHEAD(":=", { getToken(2).kind == assignOp}) Assignment() | ProcedureCall()) | Block()
+}
+
+void StatementList() : { } {
+  ( Statement() < DELIMITER >  )*
+}
+
+void Block() : { } { 
+  ( Decl() )? < BEGIN > StatementList() < END> 
+}
+
+void NonArrayType() : { } {
+  < INT > | < BOOL > | < ident >
+}
+
+void Type() : { } {
+  NonArrayType() ( < openingBrackets > < closingBrackets > )* 
+}
+
+void ReturnType(): { } {
+  < VOID > | Type()
+}
+
+void ConstDecl() : { } {
+  < CONSTANT > < ident > < constAssignOp > Literal() < DELIMITER > 
+}
+
+void VarDecl() : { } {
+  Type() <ident > ( "," < ident > )* < DELIMITER > 
+}
+
+void TypeDecl() : { } {
+  < RECORD >  < ident > VarDecl() ( VarDecl() )* < ENDRECORD >< DELIMITER > 
+}
+
+void Decl() : { } {
+  < DECLARE > ( ConstDecl() | VarDecl() | TypeDecl() )*
+}
+
+void FormalParam() : { } {
+  Type() <ident >
+}
+
+void FormalParamList() : { } {
+  FormalParam() ( "," FormalParam())*
+}
+
+void Procedure() : { } {
+  < PROCEDURE > ReturnType() <ident > < openParenthesis >  ( FormalParamList() )? < closingParenthesis >  Block() <ident > < DELIMITER > 
+}
+
+String Program() : {Token t; } {
+  < PROGRAM >  t = < ident > ( Decl() | Procedure() )* "Begin" StatementList() "End" < ident > "."
+  {
+    return t.toString();
+  }
+}
+
+void RelOp() : { } {
+  "<" | "<=" | ">=" | ">" 
+}
+
+void EqualOp() : { } {
+  "==" | "!="
+}
+
+void AddOp() : { } {
+  "+" | "-"
+}
+
+void MulOp() : { } {
+  "*" | "/" | "%" 
+}
+
