@@ -6,7 +6,7 @@ import java.io.*;
 
 public class Parser{
     public static void main(String args []) throws ParseException, FileNotFoundException, yapl.impl.scanner.ParseException  {
-	Parser parser = new Parser(new FileInputStream("D:\\Daniel\\git\\CompilerConstruction\\testfiles\\parser\\test01.yapl"));
+	Parser parser = new Parser(new FileInputStream("testfiles\\parser\\test01.yapl"));
 	String programName = parser.Program();
 	System.out.println("YAPL compilation: [" + programName + "] OK");  }}PARSER_END(Parser)SKIP :{  " "| "\r"| "\t"| "\n"}
 TOKEN :

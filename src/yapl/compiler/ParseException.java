@@ -2,6 +2,7 @@
 /* JavaCCOptions:KEEP_LINE_COL=null */
 package yapl.compiler;
 
+import yapl.impl.parser.Token;
 import yapl.interfaces.CompilerError;
 
 /**
