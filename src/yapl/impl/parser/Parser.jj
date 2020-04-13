@@ -6,7 +6,7 @@ import java.io.*;
 
 public class Parser{
     public static void main(String args []) throws ParseException, FileNotFoundException, yapl.impl.scanner.ParseException  {
-	Parser parser = new Parser(new FileInputStream("testfiles\\parser\\test01.yapl"));
+	Parser parser = new Parser(new FileInputStream("testfiles\\parser\\test02.yapl"));
 	String programName = parser.Program();
 	System.out.println("YAPL compilation: [" + programName + "] OK");  }}PARSER_END(Parser)SKIP :{  " "| "\r"| "\t"| "\n"}
 TOKEN :
@@ -46,15 +46,38 @@ TOKEN :
 | < DELIMITER : ";" >
 
 
+
   //---TOKENS---
-|  < openParenthesis : "(" >
+|  < openingParenthesis : "(" >
 |  < closingParenthesis : ")" >
 
 | < openingBrackets : "[" >
-| < closingBrackets : " ]" >
+| < closingBrackets : "]" >
 
-| < assignOp: ":=" >
+| < hash : "#" >
+| < dot : "." >
+| < colon : "," >
+
+| < assignOp: ":=" > 
 | < constAssignOp: "=" >
+
+| < less: "<" >
+| < lessequal : "<=" >
+
+| < greater: ">" >
+| < greaterequal : ">=" >
+
+| < plus : "+" >
+| < minus : "-" >
+| < multiply : "*" >
+| < divide : "/" >
+| < modulo : "%" >
+
+| < equals: "==" >
+| < nequals : "!=" >
+
+| < ident : < letter > ( < letter > | < digit > )* >
+| < number : < digit > ( < digit > )* >
 
 | < letter : [ "A"-"Z" ] | [ "a"-"z" ] | "_" >
 | < digit : [ "0"-"9" ] >
@@ -62,8 +85,8 @@ TOKEN :
 				"?" | "=" | "#" | "%" | "<" | ">" | "$" | "(" | ")"|
 				"[" | "]" | "{" | "}" | "\\" | "@" | "&" | "^" | "|" >
 			  
-| < ident : < letter > ( < letter > | < digit > )* >
-| < number : < digit > ( < digit > )* >
+
+
 | < string : "\"" ( " " | < letter > | < digit > | < otherchar > )* "\"">
 
 }
@@ -78,14 +101,14 @@ void Literal(): {} {
 }
 
 void Selector(): { } {
-	( < openingBrackets > Expr() < closingBrackets >  | "." < ident > ) (Selector())?
+	( < openingBrackets > Expr() < closingBrackets >  | < dot > < ident > ) (Selector())?
 }
 
 void ArrayLen(): { } {
-	"#" < ident > (Selector())?
+	< hash > < ident > (Selector())?
 }
 void PrimaryExpr() : { } {
-   Literal() | < openParenthesis >  Expr() < closingParenthesis >  |  (LOOKAHEAD("(", { getToken(1).kind == openParenthesis})ProcedureCall() | < ident > (Selector())? )| ArrayLen()
+   Literal() | < openingParenthesis >  Expr() < closingParenthesis >  |  (LOOKAHEAD(< ident >, { getToken(2).kind == openingParenthesis})ProcedureCall() | < ident > (Selector())? )| ArrayLen()
 }
 
 void UnaryExpr() : {} { 
@@ -109,23 +132,23 @@ void EqualExpr() : { } {
 }
 
 void CondAndExpr() : { } {
-  EqualExpr() ( < ANDOP >  EqualExpr() )
+  EqualExpr() ( < ANDOP >  EqualExpr() )*
 }
 
 void CreationExpr() : { } {
-  < NEWOP >   NonArrayType() ( < openingBrackets > Expr() < closingBrackets >  )*}
+  < NEWOP > NonArrayType() ( < openingBrackets > Expr() < closingBrackets >  )*}
 
 void Expr() : { } {
   CondAndExpr() ( < OROP > CondAndExpr() )* | CreationExpr()
 }
 
 void ArgumentList() : { } {
-  Expr() ( "," Expr() )*
+  Expr() ( < colon > Expr() )*
 }
 
 void ProcedureCall() : { } {
-  <ident > < openParenthesis >  (ArgumentList())? < closingParenthesis > 
-}
+  <ident > < openingParenthesis >  (ArgumentList())? < closingParenthesis > 
+}  
 
 void Assignment() : { } {
   < ident > ( Selector() )? < assignOp > Expr()
@@ -148,7 +171,7 @@ void WriteStatement() : { } {
 }
 
 void Statement() : { } {
-  IfStatement() | WhileStatement() | ReturnStatement() | WriteStatement() |(LOOKAHEAD(":=", { getToken(2).kind == assignOp}) Assignment() | ProcedureCall()) | Block()
+  IfStatement() | WhileStatement() | ReturnStatement() | WriteStatement() |(LOOKAHEAD(< ident >, { getToken(2).kind != openingParenthesis}) Assignment() | ProcedureCall()) | Block()
 }
 
 void StatementList() : { } {
@@ -164,7 +187,7 @@ void NonArrayType() : { } {
 }
 
 void Type() : { } {
-  NonArrayType() ( < openingBrackets > < closingBrackets > )* 
+  NonArrayType() (< openingBrackets > < closingBrackets >)* 
 }
 
 void ReturnType(): { } {
@@ -192,33 +215,33 @@ void FormalParam() : { } {
 }
 
 void FormalParamList() : { } {
-  FormalParam() ( "," FormalParam())*
+  FormalParam() ( < colon > FormalParam())*
 }
 
 void Procedure() : { } {
-  < PROCEDURE > ReturnType() <ident > < openParenthesis >  ( FormalParamList() )? < closingParenthesis >  Block() <ident > < DELIMITER > 
+  < PROCEDURE > ReturnType() <ident > < openingParenthesis >  ( FormalParamList() )? < closingParenthesis >  Block() <ident > < DELIMITER > 
 }
 
 String Program() : {Token t; } {
-  < PROGRAM >  t = < ident > ( Decl() | Procedure() )* "Begin" StatementList() "End" < ident > "."
+  < PROGRAM >  t = < ident > ( Decl() | Procedure() )* < BEGIN >  StatementList() < END >  < ident > < dot >
   {
     return t.toString();
   }
 }
 
 void RelOp() : { } {
-  "<" | "<=" | ">=" | ">" 
+  < less > | < lessequal > | < greaterequal > | < greater >  
 }
 
 void EqualOp() : { } {
-  "==" | "!="
+  < equals >  | < nequals > 
 }
 
 void AddOp() : { } {
-  "+" | "-"
+  < plus >  | < minus > 
 }
 
 void MulOp() : { } {
-  "*" | "/" | "%" 
+  < multiply >  | < divide >  | < modulo > 
 }
 
