@@ -1,247 +1,491 @@
 /**
  * JavaCC template file created by SF JavaCC plugin 1.5.28+ wizard for JavaCC 1.5.0+
- */options{  static = true;}PARSER_BEGIN(Parser)package yapl.impl.parser;
+ */
+options
+{
+  static = true;
+}
 
+PARSER_BEGIN(Parser)
+package yapl.impl.parser;
 import java.io.*;
+import yapl.lib.CompilerMessage;
 
-public class Parser{
-    public static void main(String args []) throws ParseException, FileNotFoundException, yapl.impl.scanner.ParseException  {
-	Parser parser = new Parser(new FileInputStream("testfiles\\parser\\test02.yapl"));
-	String programName = parser.Program();
-	System.out.println("YAPL compilation: [" + programName + "] OK");  }}PARSER_END(Parser)SKIP :{  " "| "\r"| "\t"| "\n"}
+public class Parser
+{
+  public static String programName;
+
+  public static void main(String args []) throws ParseException, FileNotFoundException, TokenMgrError
+  {
+    try
+    {
+      Parser parser = new Parser(new FileInputStream(args [0]));
+      parser.Program();
+      CompilerMessage.printOK(Parser.programName);
+    }
+    catch (TokenMgrError e)
+    {
+      CompilerMessage.printError(e, Parser.programName);
+    }
+    catch (ParseException e)
+    {
+      CompilerMessage.printError(e, Parser.programName);
+    }
+  }
+}
+
+PARSER_END(Parser)
+
+SKIP :
+{
+  " "
+| "\r"
+| "\t"
+| "\n"
+}
+
 TOKEN :
 {
   //---KEYWORDS---
-  < PROGRAM: "Program" >
-| < TRUTHVALUE: "True"|"False" >
-
+  < PROGRAM : "Program" >
+| < TRUTHVALUE :
+    "True"
+  | "False" >
 | < ANDOP : "And" >
-| < OROP: "Or" >
+| < OROP : "Or" >
 | < NEWOP : "new" >
-
 | < IF : "If" >
 | < THEN : "Then" >
 | < ELSE : "Else" >
 | < ENDIF : "EndIf" >
-
 | < WHILE : "While" >
 | < DO : "Do" >
 | < ENDWHILE : "EndWhile" >
-
 | < RETURN : "Return" >
 | < WRITE : "Write" >
 | < BEGIN : "Begin" >
 | < END : "End" >
-
 | < INT : "int" >
 | < BOOL : "bool" >
 | < CONSTANT : "Const" >
 | < RECORD : "Record" >
 | < ENDRECORD : "EndRecord" >
-
 | < DECLARE : "Declare" >
 | < PROCEDURE : "Procedure" >
-
 | < VOID : "void" >
 | < DELIMITER : ";" >
-
-
-
   //---TOKENS---
-|  < openingParenthesis : "(" >
-|  < closingParenthesis : ")" >
-
+| < openingParenthesis : "(" >
+| < closingParenthesis : ")" >
 | < openingBrackets : "[" >
 | < closingBrackets : "]" >
-
 | < hash : "#" >
 | < dot : "." >
 | < colon : "," >
-
-| < assignOp: ":=" > 
-| < constAssignOp: "=" >
-
-| < less: "<" >
+| < assignOp : ":=" >
+| < constAssignOp : "=" >
+| < less : "<" >
 | < lessequal : "<=" >
-
-| < greater: ">" >
+| < greater : ">" >
 | < greaterequal : ">=" >
-
 | < plus : "+" >
 | < minus : "-" >
 | < multiply : "*" >
 | < divide : "/" >
 | < modulo : "%" >
-
-| < equals: "==" >
+| < equals : "==" >
 | < nequals : "!=" >
-
-| < ident : < letter > ( < letter > | < digit > )* >
-| < number : < digit > ( < digit > )* >
-
-| < letter : [ "A"-"Z" ] | [ "a"-"z" ] | "_" >
+| < ident :
+    < letter >
+    (
+      < letter >
+    | < digit >
+    )* >
+| < number : < digit > (< digit >)* >
+| < letter :
+    [ "A"-"Z" ]
+  | [ "a"-"z" ]
+  | "_" >
 | < digit : [ "0"-"9" ] >
-| < otherchar : "+" | "-" | "*" | "/" | "." | "," | ";" | ":" | "!"|
-				"?" | "=" | "#" | "%" | "<" | ">" | "$" | "(" | ")"|
-				"[" | "]" | "{" | "}" | "\\" | "@" | "&" | "^" | "|" >
-			  
-
-
-| < string : "\"" ( " " | < letter > | < digit > | < otherchar > )* "\"">
-
+| < otherchar :
+    "+"
+  | "-"
+  | "*"
+  | "/"
+  | "."
+  | ","
+  | ";"
+  | ":"
+  | "!"
+  | 
+    "?"
+  | "="
+  | "#"
+  | "%"
+  | "<"
+  | ">"
+  | "$"
+  | "("
+  | ")"
+  | 
+    "["
+  | "]"
+  | "{"
+  | "}"
+  | "\\"
+  | "@"
+  | "&"
+  | "^"
+  | "|" >
+| < string :
+    "\""
+    (
+      " "
+    | < letter >
+    | < digit >
+    | < otherchar >
+    )*
+    "\"" >
 }
 
 SPECIAL_TOKEN :
 {
-  < comment: "/*" (~[])* "*/">
-} 
-
-void Literal(): {} {
-	< TRUTHVALUE >|< number >
+  < comment : "/*" (~[ ])* "*/" >
 }
 
-void Selector(): { } {
-	( < openingBrackets > Expr() < closingBrackets >  | < dot > < ident > ) (Selector())?
+void Literal() :
+{}
+{
+  < TRUTHVALUE >
+| < number >
 }
 
-void ArrayLen(): { } {
-	< hash > < ident > (Selector())?
-}
-void PrimaryExpr() : { } {
-   Literal() | < openingParenthesis >  Expr() < closingParenthesis >  |  (LOOKAHEAD(< ident >, { getToken(2).kind == openingParenthesis})ProcedureCall() | < ident > (Selector())? )| ArrayLen()
-}
-
-void UnaryExpr() : {} { 
-  (AddOp())? PrimaryExpr()
-}
-
-void MulExpr() : { } {
-  UnaryExpr() (MulOp() UnaryExpr())*
+void Selector() :
+{}
+{
+  (
+    < openingBrackets > Expr() < closingBrackets >
+  | < dot > < ident >
+  )
+  (
+    Selector()
+  )?
 }
 
-void AddExpr() : { } {
-   MulExpr() (AddOp() MulExpr())*
+void ArrayLen() :
+{}
+{
+  < hash > < ident >
+  (
+    Selector()
+  )?
 }
 
-void RelExpr() : { } {
-  AddExpr() (RelOp() AddExpr())?
+void PrimaryExpr() :
+{}
+{
+  Literal()
+| < openingParenthesis > Expr() < closingParenthesis >
+|
+  (
+    LOOKAHEAD(< ident >, { getToken(2).kind == openingParenthesis })
+    ProcedureCall()
+  | < ident >
+    (
+      Selector()
+    )?
+  )
+| ArrayLen()
 }
 
-void EqualExpr() : { } {
-  RelExpr() (EqualOp()  RelExpr())?
+void UnaryExpr() :
+{}
+{
+  (
+    AddOp()
+  )?
+  PrimaryExpr()
 }
 
-void CondAndExpr() : { } {
-  EqualExpr() ( < ANDOP >  EqualExpr() )*
+void MulExpr() :
+{}
+{
+  UnaryExpr()
+  (
+    MulOp() UnaryExpr()
+  )*
 }
 
-void CreationExpr() : { } {
-  < NEWOP > NonArrayType() ( < openingBrackets > Expr() < closingBrackets >  )*}
-
-void Expr() : { } {
-  CondAndExpr() ( < OROP > CondAndExpr() )* | CreationExpr()
+void AddExpr() :
+{}
+{
+  MulExpr()
+  (
+    AddOp() MulExpr()
+  )*
 }
 
-void ArgumentList() : { } {
-  Expr() ( < colon > Expr() )*
+void RelExpr() :
+{}
+{
+  AddExpr()
+  (
+    RelOp() AddExpr()
+  )?
 }
 
-void ProcedureCall() : { } {
-  <ident > < openingParenthesis >  (ArgumentList())? < closingParenthesis > 
-}  
-
-void Assignment() : { } {
-  < ident > ( Selector() )? < assignOp > Expr()
+void EqualExpr() :
+{}
+{
+  RelExpr()
+  (
+    EqualOp() RelExpr()
+  )?
 }
 
-void IfStatement() : { } {
-  < IF > Expr() < THEN > StatementList() ( < ELSE > StatementList() )? < ENDIF > 
+void CondAndExpr() :
+{}
+{
+  EqualExpr()
+  (
+    < ANDOP > EqualExpr()
+  )*
 }
 
-void WhileStatement() : { } {
-  < WHILE > Expr() < DO > StatementList() < ENDWHILE >  
+void CreationExpr() :
+{}
+{
+  < NEWOP > NonArrayType()
+  (
+    < openingBrackets > Expr() < closingBrackets >
+  )*
 }
 
-void ReturnStatement() : { } {
-  < RETURN > ( Expr() )?
+void Expr() :
+{}
+{
+  CondAndExpr()
+  (
+    < OROP > CondAndExpr()
+  )*
+| CreationExpr()
 }
 
-void WriteStatement() : { } {
+void ArgumentList() :
+{}
+{
+  Expr()
+  (
+    < colon > Expr()
+  )*
+}
+
+void ProcedureCall() :
+{}
+{
+  < ident > < openingParenthesis >
+  (
+    ArgumentList()
+  )?
+  < closingParenthesis >
+}
+
+void Assignment() :
+{}
+{
+  < ident >
+  (
+    Selector()
+  )?
+  < assignOp > Expr()
+}
+
+void IfStatement() :
+{}
+{
+  < IF > Expr() < THEN > StatementList()
+  (
+    < ELSE > StatementList()
+  )?
+  < ENDIF >
+}
+
+void WhileStatement() :
+{}
+{
+  < WHILE > Expr() < DO > StatementList() < ENDWHILE >
+}
+
+void ReturnStatement() :
+{}
+{
+  < RETURN >
+  (
+    Expr()
+  )?
+}
+
+void WriteStatement() :
+{}
+{
   < WRITE > < string >
 }
 
-void Statement() : { } {
-  IfStatement() | WhileStatement() | ReturnStatement() | WriteStatement() |(LOOKAHEAD(< ident >, { getToken(2).kind != openingParenthesis}) Assignment() | ProcedureCall()) | Block()
+void Statement() :
+{}
+{
+  IfStatement()
+| WhileStatement()
+| ReturnStatement()
+| WriteStatement()
+|
+  (
+    LOOKAHEAD(< ident >, { getToken(2).kind != openingParenthesis })
+    Assignment()
+  | ProcedureCall()
+  )
+| Block()
 }
 
-void StatementList() : { } {
-  ( Statement() < DELIMITER >  )*
+void StatementList() :
+{}
+{
+  (
+    Statement() < DELIMITER >
+  )*
 }
 
-void Block() : { } { 
-  ( Decl() )? < BEGIN > StatementList() < END> 
+void Block() :
+{}
+{
+  (
+    Decl()
+  )?
+  < BEGIN > StatementList() < END >
 }
 
-void NonArrayType() : { } {
-  < INT > | < BOOL > | < ident >
+void NonArrayType() :
+{}
+{
+  < INT >
+| < BOOL >
+| < ident >
 }
 
-void Type() : { } {
-  NonArrayType() (< openingBrackets > < closingBrackets >)* 
+void Type() :
+{}
+{
+  NonArrayType() (< openingBrackets > < closingBrackets >)*
 }
 
-void ReturnType(): { } {
-  < VOID > | Type()
+void ReturnType() :
+{}
+{
+  < VOID >
+| Type()
 }
 
-void ConstDecl() : { } {
-  < CONSTANT > < ident > < constAssignOp > Literal() < DELIMITER > 
+void ConstDecl() :
+{}
+{
+  < CONSTANT > < ident > < constAssignOp > Literal() < DELIMITER >
 }
 
-void VarDecl() : { } {
-  Type() <ident > ( "," < ident > )* < DELIMITER > 
+void VarDecl() :
+{}
+{
+  Type() < ident > ("," < ident >)* < DELIMITER >
 }
 
-void TypeDecl() : { } {
-  < RECORD >  < ident > VarDecl() ( VarDecl() )* < ENDRECORD >< DELIMITER > 
+void TypeDecl() :
+{}
+{
+  < RECORD > < ident > VarDecl()
+  (
+    VarDecl()
+  )*
+  < ENDRECORD > < DELIMITER >
 }
 
-void Decl() : { } {
-  < DECLARE > ( ConstDecl() | VarDecl() | TypeDecl() )*
+void Decl() :
+{}
+{
+  < DECLARE >
+  (
+    ConstDecl()
+  | VarDecl()
+  | TypeDecl()
+  )*
 }
 
-void FormalParam() : { } {
-  Type() <ident >
+void FormalParam() :
+{}
+{
+  Type() < ident >
 }
 
-void FormalParamList() : { } {
-  FormalParam() ( < colon > FormalParam())*
+void FormalParamList() :
+{}
+{
+  FormalParam()
+  (
+    < colon > FormalParam()
+  )*
 }
 
-void Procedure() : { } {
-  < PROCEDURE > ReturnType() <ident > < openingParenthesis >  ( FormalParamList() )? < closingParenthesis >  Block() <ident > < DELIMITER > 
+void Procedure() :
+{}
+{
+  < PROCEDURE > ReturnType() < ident > < openingParenthesis >
+  (
+    FormalParamList()
+  )?
+  < closingParenthesis > Block() < ident > < DELIMITER >
 }
 
-String Program() : {Token t; } {
-  < PROGRAM >  t = < ident > ( Decl() | Procedure() )* < BEGIN >  StatementList() < END >  < ident > < dot >
+void Program() :
+{
+  Token t;
+}
+{
+  < PROGRAM > t = < ident >
   {
-    return t.toString();
+    Parser.programName = t.toString();
   }
+  (
+    Decl()
+  | Procedure()
+  )*
+  < BEGIN > StatementList() < END > < ident > < dot >
 }
 
-void RelOp() : { } {
-  < less > | < lessequal > | < greaterequal > | < greater >  
+void RelOp() :
+{}
+{
+  < less >
+| < lessequal >
+| < greaterequal >
+| < greater >
 }
 
-void EqualOp() : { } {
-  < equals >  | < nequals > 
+void EqualOp() :
+{}
+{
+  < equals >
+| < nequals >
 }
 
-void AddOp() : { } {
-  < plus >  | < minus > 
+void AddOp() :
+{}
+{
+  < plus >
+| < minus >
 }
 
-void MulOp() : { } {
-  < multiply >  | < divide >  | < modulo > 
+void MulOp() :
+{}
+{
+  < multiply >
+| < divide >
+| < modulo >
 }
-

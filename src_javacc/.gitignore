@@ -1,8 +1,6 @@
 /G1Constants.java
-/ParseException.java
 /SimpleCharStream.java
 /Token.java
-/TokenMgrError.java
 /LL1TestConstants.java
 /TestConstants.java
 /LL1Test.java
