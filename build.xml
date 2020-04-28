@@ -27,6 +27,8 @@ User-relevant properties: (customize to your environment)
 	<property name="execlog" value="${yapl}.execlog" />
 	<property name="truefile" value="${yapl}.true" />
 
+	<property name="input" value="aabc" /> 
+
 	<!-- test files for code generating compiler -->
 	<property name="test-dir" location="testfiles/codegen" />
 	<property name="test-files" value="test01,test02,test03,test04,test05,test06,test07,test08,test09,test10,test11,test12,test13,test14,test15,test16,test17,test18,test19,test20,test21,test22,test23,test24,test25" />
@@ -65,7 +67,7 @@ User-relevant properties: (customize to your environment)
 	</target>
 
 	<target name="runSimpleParser" depends="compile-java" description="run the SimpleParser">
-			<java classname="yapl.impl.simpleGrammar.SimpleGrammar" classpath="${build}" >
+			<java classname="yapl.impl.simpleGrammar.SimpleGrammar" classpath="${build}" inputstring="${input}">
 			</java>
 	</target>
 
