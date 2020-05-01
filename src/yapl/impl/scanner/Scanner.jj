@@ -15,6 +15,12 @@ public class Scanner{  public static void main(String args []) throws ParseExc
   	} while (t.kind != EOF);    }}PARSER_END(Scanner)SKIP :{  " "| "\r"| "\t"| "\n"}TOKEN :{
   < letter : [ "A"-"Z" ] | [ "a"-"z" ] | "_" >
 | < digit : [ "0"-"9" ] >
+| < less : "<" >
+| < lessequal : "<=" >
+| < greater : ">" >
+| < greaterequal : ">=" >
+| < equals : "==" >
+| < assignOp : ":=" >
 | < otherchar : "+" | "-" | "*" | "/" | "." | "," | ";" | ":" | "!"
 			  | "?" | "=" | "#" | "%" | "<" | ">" | "$" | "(" | ")"
 			  | "[" | "]" | "{" | "}" | "\\" | "@" | "&" | "^" | "|">

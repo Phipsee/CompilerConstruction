@@ -15,15 +15,27 @@ public interface ScannerConstants {
   /** RegularExpression Id. */
   int digit = 6;
   /** RegularExpression Id. */
-  int otherchar = 7;
+  int less = 7;
   /** RegularExpression Id. */
-  int ident = 8;
+  int lessequal = 8;
   /** RegularExpression Id. */
-  int number = 9;
+  int greater = 9;
   /** RegularExpression Id. */
-  int string = 10;
+  int greaterequal = 10;
   /** RegularExpression Id. */
-  int comment = 11;
+  int equals = 11;
+  /** RegularExpression Id. */
+  int assignOp = 12;
+  /** RegularExpression Id. */
+  int otherchar = 13;
+  /** RegularExpression Id. */
+  int ident = 14;
+  /** RegularExpression Id. */
+  int number = 15;
+  /** RegularExpression Id. */
+  int string = 16;
+  /** RegularExpression Id. */
+  int comment = 17;
 
   /** Lexical state. */
   int DEFAULT = 0;
@@ -37,6 +49,12 @@ public interface ScannerConstants {
     "\"\\n\"",
     "<letter>",
     "<digit>",
+    "\"<\"",
+    "\"<=\"",
+    "\">\"",
+    "\">=\"",
+    "\"==\"",
+    "\":=\"",
     "<otherchar>",
     "<ident>",
     "<number>",
