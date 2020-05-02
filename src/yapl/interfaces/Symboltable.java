@@ -1,5 +1,6 @@
 package yapl.interfaces;
 
+import yapl.impl.parser.Token;
 import yapl.lib.YAPLException;
 
 /**
@@ -56,7 +57,7 @@ public interface Symboltable {
 	 *             (Internal) if the new symbol's name is <code>null</code>.
 	 * @see #openScope(boolean)
 	 */
-	public void addSymbol(Symbol s) throws YAPLException;
+	public void addSymbol(Symbol s, Token t) throws YAPLException;
 
 	/**
 	 * Lookup a symbol in the stack of scopes. Symbols in an inner scope hide

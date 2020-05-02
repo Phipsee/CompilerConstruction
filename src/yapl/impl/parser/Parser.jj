@@ -10,12 +10,16 @@ PARSER_BEGIN(Parser)
 package yapl.impl.parser;
 import java.io.*;
 import yapl.lib.CompilerMessage;
+import yapl.impl.symbolcheck.SymboltableImpl;
+import yapl.impl.symbolcheck.SymbolImpl;
+import yapl.lib.YAPLException;
 
 public class Parser
 {
   public static String programName;
+  public static SymboltableImpl table = new SymboltableImpl();
 
-  public static void main(String args []) throws ParseException, FileNotFoundException, TokenMgrError
+  public static void main(String args []) throws ParseException, FileNotFoundException, TokenMgrError, YAPLException
   {
     try
     {
@@ -31,7 +35,19 @@ public class Parser
     {
       CompilerMessage.printError(e, Parser.programName);
     }
+    catch (YAPLException e)
+    {
+	  CompilerMessage.printError(e, Parser.programName);	
+   	} 
   }
+
+  public static SymbolImpl lookup(int errorNumber, SymbolImpl sym, Token t) throws YAPLException {
+    SymbolImpl s = (SymbolImpl) table.lookup(t.toString());
+    if(s == null) {
+		throw new YAPLException(11, null, t);
+  	}
+  	return s;
+  }  
 }
 
 PARSER_END(Parser)
@@ -160,7 +176,7 @@ void Literal() :
 | < number >
 }
 
-void Selector() :
+void Selector() throws YAPLException :
 {}
 {
   (
@@ -172,25 +188,35 @@ void Selector() :
   )?
 }
 
-void ArrayLen() :
-{}
+void ArrayLen() throws YAPLException :
 {
-  < hash > < ident >
+	Token t;
+}
+{
+  < hash > t = < ident >
+  {
+    lookup(11, null, t);
+  }
   (
     Selector()
   )?
 }
 
-void PrimaryExpr() :
-{}
+void PrimaryExpr() throws YAPLException :
+{
+	Token t;
+}
 {
   Literal()
 | < openingParenthesis > Expr() < closingParenthesis >
 |
   (
-    LOOKAHEAD(< ident >, { getToken(2).kind == openingParenthesis })
+    LOOKAHEAD( t = < ident >, { getToken(2).kind == openingParenthesis })
     ProcedureCall()
-  | < ident >
+  | t = < ident >
+  {
+    lookup(11, null, t);
+  }
     (
       Selector()
     )?
@@ -198,7 +224,7 @@ void PrimaryExpr() :
 | ArrayLen()
 }
 
-void UnaryExpr() :
+void UnaryExpr() throws YAPLException :
 {}
 {
   (
@@ -207,7 +233,7 @@ void UnaryExpr() :
   PrimaryExpr()
 }
 
-void MulExpr() :
+void MulExpr() throws YAPLException :
 {}
 {
   UnaryExpr()
@@ -216,7 +242,7 @@ void MulExpr() :
   )*
 }
 
-void AddExpr() :
+void AddExpr() throws YAPLException :
 {}
 {
   MulExpr()
@@ -225,7 +251,7 @@ void AddExpr() :
   )*
 }
 
-void RelExpr() :
+void RelExpr() throws YAPLException :
 {}
 {
   AddExpr()
@@ -234,7 +260,7 @@ void RelExpr() :
   )?
 }
 
-void EqualExpr() :
+void EqualExpr() throws YAPLException :
 {}
 {
   RelExpr()
@@ -243,7 +269,7 @@ void EqualExpr() :
   )?
 }
 
-void CondAndExpr() :
+void CondAndExpr() throws YAPLException :
 {}
 {
   EqualExpr()
@@ -252,7 +278,7 @@ void CondAndExpr() :
   )*
 }
 
-void CreationExpr() :
+void CreationExpr()  throws YAPLException :
 {}
 {
   < NEWOP > NonArrayType()
@@ -261,7 +287,7 @@ void CreationExpr() :
   )*
 }
 
-void Expr() :
+void Expr() throws YAPLException :
 {}
 {
   CondAndExpr()
@@ -271,7 +297,7 @@ void Expr() :
 | CreationExpr()
 }
 
-void ArgumentList() :
+void ArgumentList() throws YAPLException :
 {}
 {
   Expr()
@@ -280,27 +306,40 @@ void ArgumentList() :
   )*
 }
 
-void ProcedureCall() :
-{}
+void ProcedureCall() throws YAPLException :
 {
-  < ident > < openingParenthesis >
+	Token t;
+}
+{
+  t = < ident > < openingParenthesis >
+  {
+	SymbolImpl sym = lookup(11, null, t);
+	if(sym.getKind() != 1) {
+		throw new YAPLException(12, sym, t);
+	}  
+  }  
   (
     ArgumentList()
   )?
   < closingParenthesis >
 }
 
-void Assignment() :
-{}
+void Assignment() throws YAPLException:
 {
-  < ident >
+  Token t;
+}
+{
+  t = < ident >
+  {
+    lookup(11, null, t);
+  }
   (
     Selector()
   )?
   < assignOp > Expr()
 }
 
-void IfStatement() :
+void IfStatement() throws YAPLException :
 {}
 {
   < IF > Expr() < THEN > StatementList()
@@ -310,13 +349,13 @@ void IfStatement() :
   < ENDIF >
 }
 
-void WhileStatement() :
+void WhileStatement() throws YAPLException :
 {}
 {
   < WHILE > Expr() < DO > StatementList() < ENDWHILE >
 }
 
-void ReturnStatement() :
+void ReturnStatement() throws YAPLException :
 {}
 {
   < RETURN >
@@ -331,8 +370,9 @@ void WriteStatement() :
   < WRITE > < string >
 }
 
-void Statement() :
-{}
+void Statement() throws YAPLException :
+{
+}
 {
   IfStatement()
 | WhileStatement()
@@ -347,7 +387,7 @@ void Statement() :
 | Block()
 }
 
-void StatementList() :
+void StatementList() throws YAPLException :
 {}
 {
   (
@@ -355,59 +395,107 @@ void StatementList() :
   )*
 }
 
-void Block() :
+void Block() throws YAPLException :
 {}
 {
   (
     Decl()
   )?
-  < BEGIN > StatementList() < END >
+  < BEGIN >
+  {
+	table.openScope(false);
+  }
+  StatementList() < END >
+  {
+    table.closeScope();
+  }
 }
 
-void NonArrayType() :
-{}
+void NonArrayType() throws YAPLException :
+{
+	Token t;
+}
 {
   < INT >
 | < BOOL >
-| < ident >
+| t = < ident >
+{
+  lookup(11, null, t);
+}
 }
 
-void Type() :
+void Type() throws YAPLException :
 {}
 {
   NonArrayType() (< openingBrackets > < closingBrackets >)*
 }
 
-void ReturnType() :
+void ReturnType() throws YAPLException :
 {}
 {
   < VOID >
 | Type()
 }
 
-void ConstDecl() :
-{}
+void ConstDecl() throws YAPLException :
 {
-  < CONSTANT > < ident > < constAssignOp > Literal() < DELIMITER >
+	Token t;
+}
+{
+  < CONSTANT > t = < ident > < constAssignOp > Literal() < DELIMITER >
+  {
+    SymbolImpl sym = new SymbolImpl();
+    sym.setName(t.toString());
+    sym.setKind(3);
+    table.addSymbol(sym, t);
+    table.setParentSymbol(sym);
+  }
 }
 
-void VarDecl() :
-{}
+void VarDecl()  throws YAPLException:
 {
-  Type() < ident > ("," < ident >)* < DELIMITER >
+	Token t;
+	Token t2;
+}
+{
+  {
+	t2 = null;
+  } 
+  Type() t = < ident > ("," t2 = < ident >)* < DELIMITER >
+  {
+    SymbolImpl sym = new SymbolImpl();
+    sym.setName(t.toString());
+    sym.setKind(2);
+    table.addSymbol(sym, t);
+    if(t2 != null) {
+      	SymbolImpl sym2 = new SymbolImpl();
+    	sym2.setName(t2.toString());
+    	sym2.setKind(2);
+    	table.addSymbol(sym2, t2);
+  	} 	
+  }
 }
 
-void TypeDecl() :
-{}
+void TypeDecl()  throws YAPLException:
 {
-  < RECORD > < ident > VarDecl()
+	Token t;
+}
+{
+  < RECORD > t = < ident > VarDecl()
+  {
+    SymbolImpl sym = new SymbolImpl();
+    sym.setName(t.toString());
+    sym.setKind(4);
+    table.addSymbol(sym, t);
+    table.setParentSymbol(sym);
+  }
   (
     VarDecl()
   )*
   < ENDRECORD > < DELIMITER >
 }
 
-void Decl() :
+void Decl()  throws YAPLException:
 {}
 {
   < DECLARE >
@@ -418,13 +506,22 @@ void Decl() :
   )*
 }
 
-void FormalParam() :
-{}
+void FormalParam() throws YAPLException :
 {
-  Type() < ident >
+	Token t;
+}
+{
+  Type() t = < ident >
+  {
+    SymbolImpl sym = new SymbolImpl();
+    sym.setName(t.toString());
+    sym.setKind(6);
+    table.addSymbol(sym, t);
+    table.setParentSymbol(sym);
+  }
 }
 
-void FormalParamList() :
+void FormalParamList()  throws YAPLException :
 {}
 {
   FormalParam()
@@ -433,17 +530,31 @@ void FormalParamList() :
   )*
 }
 
-void Procedure() :
-{}
+void Procedure() throws YAPLException :
 {
-  < PROCEDURE > ReturnType() < ident > < openingParenthesis >
+	Token t;
+}
+{
+  < PROCEDURE > ReturnType() t = < ident > < openingParenthesis >
+  {
+    SymbolImpl sym = new SymbolImpl();
+    sym.setName(t.toString());
+    sym.setKind(1);
+    table.addSymbol(sym, t);
+    table.setParentSymbol(sym);
+    table.openScope(false);
+  }
   (
     FormalParamList()
   )?
-  < closingParenthesis > Block() < ident > < DELIMITER >
+  < closingParenthesis > Block() t = < ident > < DELIMITER >
+  {
+    lookup(13, sym, t);
+    table.closeScope();
+  }
 }
 
-void Program() :
+void Program() throws YAPLException:
 {
   Token t;
 }
@@ -451,12 +562,23 @@ void Program() :
   < PROGRAM > t = < ident >
   {
     Parser.programName = t.toString();
+    
+    table.openScope(true);
+    SymbolImpl sym = new SymbolImpl();
+    sym.setName(t.toString());
+    sym.setKind(0);
+    table.addSymbol(sym, t);
+    table.setParentSymbol(sym);
   }
   (
     Decl()
   | Procedure()
   )*
-  < BEGIN > StatementList() < END > < ident > < dot >
+  < BEGIN > StatementList() < END > t = < ident > < dot >
+  {
+	lookup(13, sym, t);
+	table.closeScope();
+  }
 }
 
 void RelOp() :

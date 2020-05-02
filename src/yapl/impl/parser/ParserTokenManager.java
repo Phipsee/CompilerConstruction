@@ -2,6 +2,9 @@
 package yapl.impl.parser;
 import java.io.*;
 import yapl.lib.CompilerMessage;
+import yapl.impl.symbolcheck.SymboltableImpl;
+import yapl.impl.symbolcheck.SymbolImpl;
+import yapl.lib.YAPLException;
 
 /** Token Manager. */
 public class ParserTokenManager implements ParserConstants

@@ -3,114 +3,141 @@ package yapl.impl.symbolcheck;
 import yapl.interfaces.Symbol;
 import yapl.lib.Type;
 
-public class SymbolImpl implements Symbol{
+public class SymbolImpl implements Symbol {
 
+	private int kind;
+	private String identifier;
+	private Type type;
+	private boolean isReference;
+	private boolean isReadOnly;
+	private boolean isGlobal;
+	private int offset;
+	private Symbol nextSymbol;
+	private boolean seen;
+
+	
+	public SymbolImpl() {}
+	
+	public SymbolImpl(String name, int kind) {
+		this.identifier = name;
+		this.kind = kind;
+	}
+	
 	@Override
 	public int getKind() {
-		// TODO Auto-generated method stub
-		return 0;
+		return kind;
 	}
 
 	@Override
 	public String getKindString() {
-		// TODO Auto-generated method stub
-		return null;
+		switch (kind) {
+		case 0:
+			return "program";
+		case 1:
+			return "procedure";
+		case 2:
+			return "variable";
+		case 3:
+			return "constant";
+		case 4:
+			return "typename";
+		case 5:
+			return "field";
+		case 6:
+			return "parameter";
+		}
+		return "";
 	}
 
 	@Override
 	public void setKind(int kind) {
-		// TODO Auto-generated method stub
-		
+		this.kind = kind;
 	}
 
 	@Override
 	public String getName() {
-		// TODO Auto-generated method stub
-		return null;
+		return identifier;
+	}
+	
+	public void setName(String name) {
+		this.identifier = name;
 	}
 
 	@Override
 	public Type getType() {
-		// TODO Auto-generated method stub
-		return null;
+		return type;
 	}
 
 	@Override
 	public void setType(Type type) {
-		// TODO Auto-generated method stub
-		
+		this.type = type;
 	}
 
 	@Override
 	public boolean isReference() {
-		// TODO Auto-generated method stub
-		return false;
+		return isReference;
 	}
 
 	@Override
 	public void setReference(boolean isReference) {
-		// TODO Auto-generated method stub
-		
+		this.isReference = isReference;
 	}
 
 	@Override
 	public boolean isReadonly() {
-		// TODO Auto-generated method stub
-		return false;
+		return isReadOnly;
 	}
 
 	@Override
 	public void setReadonly(boolean isReadonly) {
-		// TODO Auto-generated method stub
-		
+		this.isReadOnly = isReadonly;
 	}
 
 	@Override
 	public boolean isGlobal() {
-		// TODO Auto-generated method stub
-		return false;
+		return isGlobal;
 	}
 
 	@Override
 	public void setGlobal(boolean isGlobal) {
-		// TODO Auto-generated method stub
-		
+		this.isGlobal = isGlobal;
 	}
 
 	@Override
 	public int getOffset() {
-		// TODO Auto-generated method stub
-		return 0;
+		return offset;
 	}
 
 	@Override
 	public void setOffset(int offset) {
-		// TODO Auto-generated method stub
-		
+		this.offset = offset;
 	}
 
 	@Override
 	public Symbol getNextSymbol() {
-		// TODO Auto-generated method stub
-		return null;
+		return nextSymbol != null ? nextSymbol : null;
 	}
 
 	@Override
 	public void setNextSymbol(Symbol symbol) {
-		// TODO Auto-generated method stub
-		
+		this.nextSymbol = symbol;
 	}
 
 	@Override
 	public boolean getReturnSeen() {
-		// TODO Auto-generated method stub
-		return false;
+		return seen;
 	}
 
 	@Override
 	public void setReturnSeen(boolean seen) {
-		// TODO Auto-generated method stub
-		
+		this.seen = seen;
+	}
+
+	@Override
+	public String toString() {
+		return "SymbolImpl [kind=" + kind + ", identifier=" + identifier + ", type=" + type + ", isReference="
+				+ isReference + ", isReadOnly=" + isReadOnly + ", isGlobal=" + isGlobal + ", offset=" + offset
+				+ ", nextSymbol=" + nextSymbol + ", seen=" + seen + "]";
 	}
 
 }
