@@ -166,7 +166,7 @@ TOKEN :
 
 SPECIAL_TOKEN :
 {
-  < comment : "/*" (~[ ])* "*/" >
+  < comment : "/*" (~[])* "*/" >
 }
 
 void Literal() :
@@ -195,7 +195,10 @@ void ArrayLen() throws YAPLException :
 {
   < hash > t = < ident >
   {
-    lookup(11, null, t);
+    SymbolImpl sym = lookup(11, null, t);
+    if(sym.getKind() != 2 && sym.getKind() != 6) {
+		throw new YAPLException(12, sym, t);
+	}
   }
   (
     Selector()
@@ -215,7 +218,10 @@ void PrimaryExpr() throws YAPLException :
     ProcedureCall()
   | t = < ident >
   {
-    lookup(11, null, t);
+    SymbolImpl sym = lookup(11, null, t);
+    if(sym.getKind() != 2 && sym.getKind() != 3 && sym.getKind() != 6) {
+		throw new YAPLException(12, sym, t);
+  	}  
   }
     (
       Selector()
@@ -331,7 +337,10 @@ void Assignment() throws YAPLException:
 {
   t = < ident >
   {
-    lookup(11, null, t);
+    SymbolImpl sym = lookup(11, null, t);
+    if(sym.getKind() != 2 && sym.getKind() != 6) {
+		throw new YAPLException(12, sym, t);
+	}
   }
   (
     Selector()
@@ -398,13 +407,13 @@ void StatementList() throws YAPLException :
 void Block() throws YAPLException :
 {}
 {
+  {
+	table.openScope(false);
+  }
   (
     Decl()
   )?
   < BEGIN >
-  {
-	table.openScope(false);
-  }
   StatementList() < END >
   {
     table.closeScope();
@@ -420,7 +429,10 @@ void NonArrayType() throws YAPLException :
 | < BOOL >
 | t = < ident >
 {
-  lookup(11, null, t);
+  SymbolImpl sym = lookup(11, null, t);
+  if(sym.getKind() != 4) {
+	throw new YAPLException(12, sym, t);
+  }  
 }
 }
 
@@ -448,7 +460,6 @@ void ConstDecl() throws YAPLException :
     sym.setName(t.toString());
     sym.setKind(3);
     table.addSymbol(sym, t);
-    table.setParentSymbol(sym);
   }
 }
 
@@ -481,18 +492,23 @@ void TypeDecl()  throws YAPLException:
 	Token t;
 }
 {
+  {
+    table.openScope(true);
+  }
   < RECORD > t = < ident > VarDecl()
   {
     SymbolImpl sym = new SymbolImpl();
     sym.setName(t.toString());
     sym.setKind(4);
     table.addSymbol(sym, t);
-    table.setParentSymbol(sym);
   }
   (
     VarDecl()
   )*
   < ENDRECORD > < DELIMITER >
+  {
+    table.closeScope();
+  }
 }
 
 void Decl()  throws YAPLException:
@@ -517,7 +533,6 @@ void FormalParam() throws YAPLException :
     sym.setName(t.toString());
     sym.setKind(6);
     table.addSymbol(sym, t);
-    table.setParentSymbol(sym);
   }
 }
 
@@ -540,16 +555,18 @@ void Procedure() throws YAPLException :
     SymbolImpl sym = new SymbolImpl();
     sym.setName(t.toString());
     sym.setKind(1);
-    table.addSymbol(sym, t);
-    table.setParentSymbol(sym);
-    table.openScope(false);
+    sym.setGlobal(true);
+    table.openScope(true);
+    table.setParentSymbol(sym, t);
   }
   (
     FormalParamList()
   )?
   < closingParenthesis > Block() t = < ident > < DELIMITER >
   {
-    lookup(13, sym, t);
+	if(!table.getNearestParentSymbol(1).getName().equals(t.toString())) {
+		throw new YAPLException(13, sym, t);
+	}
     table.closeScope();
   }
 }
@@ -567,8 +584,7 @@ void Program() throws YAPLException:
     SymbolImpl sym = new SymbolImpl();
     sym.setName(t.toString());
     sym.setKind(0);
-    table.addSymbol(sym, t);
-    table.setParentSymbol(sym);
+    table.setParentSymbol(sym, t);
   }
   (
     Decl()
@@ -576,7 +592,9 @@ void Program() throws YAPLException:
   )*
   < BEGIN > StatementList() < END > t = < ident > < dot >
   {
-	lookup(13, sym, t);
+	if(!table.getNearestParentSymbol(0).getName().equals(t.toString())) {
+		throw new YAPLException(13, sym, t);
+	}
 	table.closeScope();
   }
 }

@@ -15,7 +15,7 @@ public class SymboltableImpl implements Symboltable{
 	private Stack<Scope> scope = new Stack<Scope>();
 	private List<Scope> allScopes = new ArrayList<Scope>();
 	
-	private boolean debug = false;
+	private boolean debug = false; 
 	
 	public SymboltableImpl() {
 		openScope(true);
@@ -45,7 +45,7 @@ public class SymboltableImpl implements Symboltable{
 
 	@Override
 	public void addSymbol(Symbol s, Token t) throws YAPLException {
-		if(scope.get(scope.size()-1).lookup(s.getName()) != null && lookup(t.toString()).getKind() != 0) {
+		if(scope.get(scope.size()-1).lookup(s.getName()) != null) {
 			throw new YAPLException(10, s, t, lookup(t.toString()));
 		}
 		scope.get(scope.size()-1).put(s.getName(), s);
@@ -66,14 +66,19 @@ public class SymboltableImpl implements Symboltable{
 			for(Scope s: allScopes) {
 				if(s.getParent() != null && s.getParent().getName().equals(name)) {
 					symbol = s.getParent();
+				}else if(s.containsKey(name)) {
+					symbol = s.lookup(name);
 				}
 			}
 		}
-		return symbol;
+		return symbol != null && symbol.getKind() == 0 ? null : symbol;
 	}
 
 	@Override
-	public void setParentSymbol(Symbol sym) {
+	public void setParentSymbol(Symbol sym, Token t) throws YAPLException {
+		if(scope.get(scope.size() >= 2 ? scope.size()-2 : 0).lookup(sym.getName()) != null || lookup(sym.getName()) != null) {
+			throw new YAPLException(10, sym, t, lookup(t.toString()));
+		}
 		scope.get(scope.size()-1).setParent(sym);
 		allScopes.get(allScopes.size()-1).setParent(sym);
 	}
@@ -82,7 +87,7 @@ public class SymboltableImpl implements Symboltable{
 	public Symbol getNearestParentSymbol(int kind) {
 		Symbol symbol = null;
 		for(Scope s: scope) {
-			if(s.getParent().getKind() == kind) {
+			if(s.getParent() != null && s.getParent().getKind() == kind) {
 				symbol = s.getParent();
 			}
 		}

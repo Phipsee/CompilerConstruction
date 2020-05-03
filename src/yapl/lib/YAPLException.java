@@ -61,7 +61,7 @@ public class YAPLException extends Throwable implements CompilerError{
 		case 11:
 			return "identifier '" + token.toString() + "' not declared";
 		case 12:
-			return "illegal use of " + sym.getKindString() + " " + sym.getName();
+			return "illegal use of " + sym.getKindString() + " '" + sym.getName() + "'";
 		case 13:
 			return "End " + token.toString() + " does not match " + sym.getKindString() + " " + sym.getName();
 		}

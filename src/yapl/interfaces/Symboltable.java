@@ -77,7 +77,7 @@ public interface Symboltable {
 	 * @param sym
 	 *            the parent symbol (e.g. procedure symbol).
 	 */
-	public void setParentSymbol(Symbol sym);
+	public void setParentSymbol(Symbol sym, Token t) throws YAPLException;
 
 	/**
 	 * Return the nearest parent symbol of the given kind in the stack of
