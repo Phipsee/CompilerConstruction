@@ -166,7 +166,7 @@ TOKEN :
 
 SPECIAL_TOKEN :
 {
-  < comment : "/*" (~[])* "*/" >
+  < comment: "/*" (~["*"])* "*" (~["*","/"] (~["*"])* "*" | "*")* "/">
 }
 
 void Literal() :

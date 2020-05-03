@@ -12,7 +12,8 @@ public class Scanner{  public static void main(String args []) throws ParseExc
     do {
 		t = tkMg.getNextToken();
 		System.out.println(t.toString());
-  	} while (t.kind != EOF);    }}PARSER_END(Scanner)SKIP :{  " "| "\r"| "\t"| "\n"}TOKEN :{
+  	} while (t.kind != EOF);    }}PARSER_END(Scanner)SKIP :{  " "| "\r"| "\t"| "\n"}
+TOKEN :{
   < letter : [ "A"-"Z" ] | [ "a"-"z" ] | "_" >
 | < digit : [ "0"-"9" ] >
 | < less : "<" >
@@ -29,5 +30,5 @@ public class Scanner{  public static void main(String args []) throws ParseExc
 | < string : "\"" ( " " | < letter > | < digit > | < otherchar > )* "\"">}
 SPECIAL_TOKEN :
 {
-  < comment: "/*" (~[])* "*/">
+  < comment: "/*" (~["*"])* "*" (~["*","/"] (~["*"])* "*" | "*")* "/">
 } 
