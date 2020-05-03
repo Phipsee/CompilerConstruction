@@ -76,6 +76,9 @@ public class SymboltableImpl implements Symboltable{
 
 	@Override
 	public void setParentSymbol(Symbol sym, Token t) throws YAPLException {
+		if(scope.get(0).containsKey(sym.getName())) {
+			scope.get(0).remove(sym.getName());
+		}
 		if(scope.get(scope.size() >= 2 ? scope.size()-2 : 0).lookup(sym.getName()) != null || lookup(sym.getName()) != null) {
 			throw new YAPLException(10, sym, t, lookup(t.toString()));
 		}

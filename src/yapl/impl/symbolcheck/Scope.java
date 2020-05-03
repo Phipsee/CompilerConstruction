@@ -44,4 +44,7 @@ public class Scope {
 		this.isGlobal = isGlobal;
 	}
 	
+	public void remove(String name) {
+		symbols.remove(name);
+	}
 }
