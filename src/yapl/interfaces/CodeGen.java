@@ -1,5 +1,6 @@
 package yapl.interfaces;
 
+import yapl.impl.parser.Token;
 import yapl.lib.ArrayType;
 import yapl.lib.RecordType;
 import yapl.lib.Type;

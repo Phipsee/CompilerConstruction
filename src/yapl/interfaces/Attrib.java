@@ -22,7 +22,7 @@ import yapl.lib.Type;
  * 
  * @author Mario Taschwer
  * @version $Id$
- */
+ */ 
 public interface Attrib {
 	/** Invalid operand. */
 	public static final byte Invalid = 0;
