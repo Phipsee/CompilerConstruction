@@ -124,15 +124,15 @@ public class YAPLException extends Throwable implements CompilerError{
 		case 22:
 			return "expression after '#' is not an array type";
 		case 23:
-			return "illegal operand type for unary operator";
+			return "illegal operand type for unary operator " + token.toString();
 		case 24:
-			return "illegal operand type for binary operator";
+			return "illegal operand types for binary operator " + token.toString();
 		case 25:
-			return "illegal operand type for relational operator";
+			return "non-integer operand types for relational operator " + token.toString();
 		case 26:
-			return "illegal operand type for equality operator";
+			return "illegal operand types for equality operator " + token.toString();
 		case 27:
-			return "using procedure (not a function) in expression";
+			return "using procedure " + token.toString() + " (not a function) in expression";
 		case 28:
 			return "read-only l-value in assignment";
 		case 29:

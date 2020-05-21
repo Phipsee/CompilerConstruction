@@ -9,6 +9,12 @@ import yapl.interfaces.BackendBinSM;
 import yapl.interfaces.CodeGen;
 import yapl.lib.CompilerMessage;
 import yapl.lib.YAPLException;
+import yapl.lib.ArrayType;
+import yapl.lib.BoolType;
+import yapl.lib.IntType;
+import yapl.lib.RecordType;
+import yapl.lib.Type;
+import yapl.lib.VoidType;
 
 /** Token Manager. */
 public class ParserTokenManager implements ParserConstants

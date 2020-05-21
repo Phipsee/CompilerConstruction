@@ -18,6 +18,12 @@ import yapl.interfaces.BackendBinSM;
 import yapl.interfaces.CodeGen;
 import yapl.lib.CompilerMessage;
 import yapl.lib.YAPLException;
+import yapl.lib.ArrayType;
+import yapl.lib.BoolType;
+import yapl.lib.IntType;
+import yapl.lib.RecordType;
+import yapl.lib.Type;
+import yapl.lib.VoidType;
 
 public class Parser
 {
@@ -44,7 +50,7 @@ public class Parser
     }
     catch (YAPLException e)
     {
-	  CompilerMessage.printError(e, Parser.programName);	
+	  CompilerMessage.printError(e, Parser.programName);
    	} 
   }
 
@@ -54,7 +60,13 @@ public class Parser
 		throw new YAPLException(11, null, t);
   	}
   	return s;
-  }  
+  }
+
+  public static void isValidIntOp(Token t, Type type1, Type type2, int errorNumber) throws YAPLException {
+	if(!(type1 instanceof IntType) || !(type2 instanceof IntType)) {
+      throw new YAPLException(errorNumber, null, t);
+    }
+  }
 }
 
 PARSER_END(Parser)
@@ -176,26 +188,38 @@ SPECIAL_TOKEN :
   < comment: "/*" (~["*"])* "*" (~["*","/"] (~["*"])* "*" | "*")* "/">
 }
 
-void Literal() :
+Type Literal() :
 {}
 {
-  < TRUTHVALUE >
-| < number >
+  < TRUTHVALUE > { return new BoolType(); }
+| < number > { return new IntType(); }
 }
 
-void Selector() throws YAPLException :
-{}
+Token Selector() throws YAPLException :
+{
+  Type type;
+  Token t;
+}
 {
   (
-    < openingBrackets > Expr() < closingBrackets >
-  | < dot > < ident >
+    < openingBrackets > type = Expr()
+    t = < closingBrackets >
+    {
+	  if(!(type instanceof IntType)) {
+		throw new YAPLException(21, null, t);
+	  } 
+	}
+  | < dot > t = < ident >
   )
   (
     Selector()
   )?
+  {
+    return t;
+  }
 }
 
-void ArrayLen() throws YAPLException :
+Type ArrayLen() throws YAPLException :
 {
 	Token t;
 }
@@ -206,108 +230,223 @@ void ArrayLen() throws YAPLException :
     if(sym.getKind() != 2 && sym.getKind() != 6) {
 		throw new YAPLException(12, sym, t);
 	}
+	if(!(sym.getType() instanceof ArrayType) || ((ArrayType)sym.getType()).getDim() < 1) {
+		throw new YAPLException(22, null, t);
+	}
+	return new IntType();
   }
   (
     Selector()
   )?
 }
 
-void PrimaryExpr() throws YAPLException :
+Type PrimaryExpr() throws YAPLException :
 {
-	Token t;
+	Token t = null;
+	Type type;
 }
 {
-  Literal()
-| < openingParenthesis > Expr() < closingParenthesis >
+  type = Literal() { return type; }
+| < openingParenthesis > type = Expr() < closingParenthesis > { return type; }
 |
   (
     LOOKAHEAD( t = < ident >, { getToken(2).kind == openingParenthesis })
-    ProcedureCall()
+    type = ProcedureCall(true)
+    {
+      return type;
+    }
   | t = < ident >
   {
     SymbolImpl sym = lookup(11, null, t);
     if(sym.getKind() != 2 && sym.getKind() != 3 && sym.getKind() != 6) {
 		throw new YAPLException(12, sym, t);
-  	}  
+  	}
+  	type = sym.getType();
   }
     (
-      Selector()
+      t = Selector()
+      {
+		  if(!(sym.getType() instanceof ArrayType) || ((ArrayType)sym.getType()).getDim() <  1) {
+			throw new YAPLException(20, null, t);
+ 		  }
+ 		  type = ((ArrayType)type).getSubarray();
+      }
     )?
+    {
+		return type;
+    }
   )
-| ArrayLen()
+| type = ArrayLen() { return type; }
 }
 
-void UnaryExpr() throws YAPLException :
-{}
+Type UnaryExpr() throws YAPLException :
+{
+  	Token t = null;
+	Type type;
+}
 {
   (
-    AddOp()
+    t = AddOp()
   )?
-  PrimaryExpr()
+  type = PrimaryExpr()
+  {
+    if(t != null && !(type instanceof IntType)) {
+		throw new YAPLException(23, null, t);
+    } 
+    return type;
+  }
 }
 
-void MulExpr() throws YAPLException :
-{}
+Type MulExpr() throws YAPLException :
 {
-  UnaryExpr()
+  	Token t;
+	Type type1;
+	Type type2;
+}
+{
+  type1 =  UnaryExpr()
   (
-    MulOp() UnaryExpr()
+    t = MulOp() type2 = UnaryExpr()
+    {
+      isValidIntOp(t, type1, type2, 24);
+    }
   )*
+  {
+    return type1;
+  }  
 }
 
-void AddExpr() throws YAPLException :
-{}
+Type AddExpr() throws YAPLException :
 {
-  MulExpr()
+  	Token t;
+	Type type1;
+	Type type2;
+}
+{
+  type1 = MulExpr()
   (
-    AddOp() MulExpr()
+    t = AddOp() type2 = MulExpr()
+    {
+      isValidIntOp(t, type1, type2, 24);
+    }
   )*
+  {
+    return type1;
+  } 
 }
 
-void RelExpr() throws YAPLException :
-{}
+Type RelExpr() throws YAPLException :
 {
-  AddExpr()
+	Token t;
+	Type type1;
+	Type type2;
+}
+{
+  type1 = AddExpr()
   (
-    RelOp() AddExpr()
+    t = RelOp() type2 = AddExpr()
+    {
+      isValidIntOp(t, type1, type2, 25);
+      return new BoolType();
+    }
   )?
+  {
+    return type1;
+  } 
 }
 
-void EqualExpr() throws YAPLException :
-{}
+Type EqualExpr() throws YAPLException :
 {
-  RelExpr()
+	Token t;
+	Type type1;
+	Type type2;
+}
+{
+  type1 = RelExpr()
   (
-    EqualOp() RelExpr()
+    t = EqualOp() type2 = RelExpr()
+    {
+	    if(!(type1.getClass().equals(type2.getClass()))) {
+			throw new YAPLException(26, null, t);
+	  	}
+	  	return new BoolType();
+    }
   )?
+  {
+  	return type1;  
+  }
 }
 
-void CondAndExpr() throws YAPLException :
-{}
+Type CondAndExpr() throws YAPLException :
 {
-  EqualExpr()
+	Token t;
+	Type type1;
+	Type type2;
+}
+{
+  type1 = EqualExpr()
   (
-    < ANDOP > EqualExpr()
+    t = < ANDOP > type2 = EqualExpr()
+    { 
+	    if(!(type1 instanceof BoolType) || !(type2 instanceof BoolType)) {
+			throw new YAPLException(24, null, t);
+	  	}
+    }  	
   )*
+  {
+    return type1;
+  }
 }
 
-void CreationExpr()  throws YAPLException :
-{}
+Type CreationExpr()  throws YAPLException :
 {
-  < NEWOP > NonArrayType()
+  Type type;
+  ArrayType arr;
+  Token t;
+}
+{
+  < NEWOP > type = NonArrayType()
+  {
+    arr = new ArrayType(0, type);
+  }
   (
-    < openingBrackets > Expr() < closingBrackets >
+    t = < openingBrackets > type = Expr() < closingBrackets >
+    {
+      	if(!(type instanceof IntType)) {
+			throw new YAPLException(21, null, t);
+        }  
+		arr.incDim();
+    }
   )*
+  {
+    return arr;
+  }
 }
 
-void Expr() throws YAPLException :
-{}
+Type Expr() throws YAPLException :
 {
-  CondAndExpr()
+	Token t;
+	Type type1;
+	Type type2;
+}
+{
+  type1 = CondAndExpr()
   (
-    < OROP > CondAndExpr()
+    t = < OROP > type2 = CondAndExpr()
+    {
+		if(!(type1 instanceof BoolType) || !(type2 instanceof BoolType)) {
+			throw new YAPLException(24, null, t);
+  		}
+    }
   )*
-| CreationExpr()
+  {
+  	return type1;
+  }
+| type1 = CreationExpr()
+{
+  return type1;
+}
+
 }
 
 void ArgumentList() throws YAPLException :
@@ -319,7 +458,7 @@ void ArgumentList() throws YAPLException :
   )*
 }
 
-void ProcedureCall() throws YAPLException :
+Type ProcedureCall(boolean checkVoid) throws YAPLException :
 {
 	Token t;
 }
@@ -329,17 +468,27 @@ void ProcedureCall() throws YAPLException :
 	SymbolImpl sym = lookup(11, null, t);
 	if(sym.getKind() != 1) {
 		throw new YAPLException(12, sym, t);
-	}  
+	}
+	if(checkVoid) {
+	  if(sym.getType() instanceof VoidType) {
+		throw new YAPLException(27, null, t);
+      }  
+	}
   }  
   (
     ArgumentList()
   )?
   < closingParenthesis >
+  {
+    return sym.getType();  
+  }
 }
 
 void Assignment() throws YAPLException:
 {
   Token t;
+  Type type;
+  Boolean selector = false;
 }
 {
   t = < ident >
@@ -351,8 +500,17 @@ void Assignment() throws YAPLException:
   }
   (
     Selector()
+    { selector = true; }
   )?
-  < assignOp > Expr()
+  t = < assignOp > type = Expr()
+  {
+    if(!selector && !(sym.getType().getClass().equals(type.getClass()))) {
+		throw new YAPLException(29, null, t);
+  	}
+  	if(selector && !(((ArrayType)sym.getType()).getElem().getClass().equals(type.getClass()))) {
+		throw new YAPLException(29, null, t);
+ 	}   
+  } 
 }
 
 void IfStatement() throws YAPLException :
@@ -398,7 +556,7 @@ void Statement() throws YAPLException :
   (
     LOOKAHEAD(< ident >, { getToken(2).kind != openingParenthesis })
     Assignment()
-  | ProcedureCall()
+  | ProcedureCall(false)
   )
 | Block()
 }
@@ -427,45 +585,58 @@ void Block() throws YAPLException :
   }
 }
 
-void NonArrayType() throws YAPLException :
+Type NonArrayType() throws YAPLException :
 {
 	Token t;
 }
 {
-  < INT >
-| < BOOL >
-| t = < ident >
+  < INT > { return new IntType(); }
+| < BOOL > { return new BoolType(); }
+| t = < ident > 
 {
   SymbolImpl sym = lookup(11, null, t);
   if(sym.getKind() != 4) {
 	throw new YAPLException(12, sym, t);
-  }  
+  }
+  return sym.getType();
 }
 }
 
-void Type() throws YAPLException :
-{}
+Type Type() throws YAPLException :
 {
-  NonArrayType() (< openingBrackets > < closingBrackets >)*
+	Type type;
+	ArrayType temp;
+}
+{
+  type = NonArrayType()
+  { temp = new ArrayType(0, type); }
+  (< openingBrackets > < closingBrackets > { temp.incDim(); })*
+  {
+	return temp.getDim() > 0 ? temp : type;
+  }
 }
 
-void ReturnType() throws YAPLException :
-{}
+Type ReturnType() throws YAPLException :
 {
-  < VOID >
-| Type()
+	Type type;
+}
+{
+  < VOID > { return new VoidType(); }
+| type = Type() { return type; }
 }
 
 void ConstDecl() throws YAPLException :
 {
 	Token t;
+	Type type;
 }
 {
-  < CONSTANT > t = < ident > < constAssignOp > Literal() < DELIMITER >
+  < CONSTANT > t = < ident > < constAssignOp >  type = Literal() < DELIMITER >
   {
     SymbolImpl sym = new SymbolImpl();
     sym.setName(t.toString());
     sym.setKind(3);
+    sym.setType(type);
     table.addSymbol(sym, t);
   }
 }
@@ -474,24 +645,33 @@ void VarDecl()  throws YAPLException:
 {
 	Token t;
 	Token t2;
+	Type type;
 }
 {
   {
 	t2 = null;
   } 
-  Type() t = < ident > ("," t2 = < ident >)* < DELIMITER >
+  type = Type() t = < ident >
   {
     SymbolImpl sym = new SymbolImpl();
     sym.setName(t.toString());
     sym.setKind(2);
+    sym.setType(type);
     table.addSymbol(sym, t);
-    if(t2 != null) {
-      	SymbolImpl sym2 = new SymbolImpl();
-    	sym2.setName(t2.toString());
-    	sym2.setKind(2);
-    	table.addSymbol(sym2, t2);
-  	} 	
   }
+  ("," t2 = < ident >
+	{
+    	if(t2 != null) {
+	      	SymbolImpl sym2 = new SymbolImpl();
+	    	sym2.setName(t2.toString());
+	    	sym2.setKind(2);
+	    	sym2.setType(type);
+	    	table.addSymbol(sym2, t2);
+	    }	
+  	}
+  )* < DELIMITER >
+   	
+  
 }
 
 void TypeDecl()  throws YAPLException:
@@ -507,6 +687,7 @@ void TypeDecl()  throws YAPLException:
     SymbolImpl sym = new SymbolImpl();
     sym.setName(t.toString());
     sym.setKind(4);
+    sym.setType(new RecordType());
     table.addSymbol(sym, t);
   }
   (
@@ -532,13 +713,15 @@ void Decl()  throws YAPLException:
 void FormalParam() throws YAPLException :
 {
 	Token t;
+	Type type;
 }
 {
-  Type() t = < ident >
+  type = Type() t = < ident >
   {
     SymbolImpl sym = new SymbolImpl();
     sym.setName(t.toString());
     sym.setKind(6);
+    sym.setType(type);
     table.addSymbol(sym, t);
   }
 }
@@ -555,13 +738,15 @@ void FormalParamList()  throws YAPLException :
 void Procedure() throws YAPLException :
 {
 	Token t;
+	Type type;
 }
 {
-  < PROCEDURE > ReturnType() t = < ident > < openingParenthesis >
+  < PROCEDURE > type = ReturnType() t = < ident > < openingParenthesis >
   {
     SymbolImpl sym = new SymbolImpl();
     sym.setName(t.toString());
     sym.setKind(1);
+    sym.setType(type);
     sym.setGlobal(true);
     table.openScope(true);
     table.setParentSymbol(sym, t);
@@ -606,33 +791,41 @@ void Program() throws YAPLException:
   }
 }
 
-void RelOp() :
-{}
+Token RelOp() :
 {
-  < less >
-| < lessequal >
-| < greaterequal >
-| < greater >
+	Token t;
+}
+{
+  t = < less > { return t; }
+| t = < lessequal > { return t; }
+| t = < greaterequal > { return t; }
+| t = < greater > { return t; }
 }
 
-void EqualOp() :
-{}
+Token EqualOp() :
 {
-  < equals >
-| < nequals >
+  Token t;
+}
+{
+  t = < equals > { return t; }
+| t = < nequals > { return t; }
 }
 
-void AddOp() :
-{}
+Token AddOp() :
 {
-  < plus >
-| < minus >
+	Token t;
+}
+{
+  t = < plus > { return t; }
+| t = < minus > { return t; }
 }
 
-void MulOp() :
-{}
+Token MulOp() :
 {
-  < multiply >
-| < divide >
-| < modulo >
+	Token t;
+}
+{
+  t = < multiply > { return t; }
+| t = < divide > { return t; }
+| t = < modulo > { return t; }
 }
