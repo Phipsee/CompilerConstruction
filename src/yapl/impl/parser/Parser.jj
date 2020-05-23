@@ -16,14 +16,9 @@ import yapl.impl.symbolcheck.SymbolImpl;
 import yapl.impl.symbolcheck.SymboltableImpl;
 import yapl.interfaces.BackendBinSM;
 import yapl.interfaces.CodeGen;
-import yapl.lib.CompilerMessage;
-import yapl.lib.YAPLException;
-import yapl.lib.ArrayType;
-import yapl.lib.BoolType;
-import yapl.lib.IntType;
-import yapl.lib.RecordType;
-import yapl.lib.Type;
-import yapl.lib.VoidType;
+import yapl.lib.*;
+
+
 
 public class Parser
 {
@@ -51,6 +46,7 @@ public class Parser
     catch (YAPLException e)
     {
 	  CompilerMessage.printError(e, Parser.programName);
+	  e.printStackTrace();
    	} 
   }
 
@@ -195,10 +191,11 @@ Type Literal() :
 | < number > { return new IntType(); }
 }
 
-Token Selector() throws YAPLException :
+TypeAndToken Selector(Type input) throws YAPLException :
 {
   Type type;
   Token t;
+  TypeAndToken tt = new TypeAndToken();
 }
 {
   (
@@ -211,11 +208,17 @@ Token Selector() throws YAPLException :
 	}
   | < dot > t = < ident >
   )
+  {
+    tt.setToken(t);	
+    if(input instanceof ArrayType) { 
+		tt.setType(((ArrayType)input).getSubarray());	
+	}
+  }
   (
-    Selector()
+    tt = Selector(tt.getType())
   )?
   {
-    return t;
+    return tt;
   }
 }
 
@@ -236,7 +239,7 @@ Type ArrayLen() throws YAPLException :
 	return new IntType();
   }
   (
-    Selector()
+    Selector(sym.getType())
   )?
 }
 
@@ -244,6 +247,7 @@ Type PrimaryExpr() throws YAPLException :
 {
 	Token t = null;
 	Type type;
+	TypeAndToken tt = null;
 }
 {
   type = Literal() { return type; }
@@ -264,16 +268,18 @@ Type PrimaryExpr() throws YAPLException :
   	type = sym.getType();
   }
     (
-      t = Selector()
+      tt = Selector(type)
       {
 		  if(!(sym.getType() instanceof ArrayType) || ((ArrayType)sym.getType()).getDim() <  1) {
-			throw new YAPLException(20, null, t);
+		    if(!(sym.getType() instanceof RecordType)) { 
+				throw new YAPLException(20, null, tt.getToken());
+			}
  		  }
- 		  type = ((ArrayType)type).getSubarray();
+ 		  //type = ((ArrayType)type).getSubarray();
       }
     )?
     {
-		return type;
+		return tt != null ? tt.getType() : type;
     }
   )
 | type = ArrayLen() { return type; }
@@ -499,7 +505,7 @@ void Assignment() throws YAPLException:
 	}
   }
   (
-    Selector()
+    Selector(sym.getType())
     { selector = true; }
   )?
   t = < assignOp > type = Expr()

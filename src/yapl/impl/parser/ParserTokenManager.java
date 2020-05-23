@@ -7,14 +7,7 @@ import yapl.impl.symbolcheck.SymbolImpl;
 import yapl.impl.symbolcheck.SymboltableImpl;
 import yapl.interfaces.BackendBinSM;
 import yapl.interfaces.CodeGen;
-import yapl.lib.CompilerMessage;
-import yapl.lib.YAPLException;
-import yapl.lib.ArrayType;
-import yapl.lib.BoolType;
-import yapl.lib.IntType;
-import yapl.lib.RecordType;
-import yapl.lib.Type;
-import yapl.lib.VoidType;
+import yapl.lib.*;
 
 /** Token Manager. */
 public class ParserTokenManager implements ParserConstants
