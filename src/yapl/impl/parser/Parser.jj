@@ -24,6 +24,7 @@ public class Parser
 {
   public static String programName;
   public static SymboltableImpl table = new SymboltableImpl();
+  public static Token errorToken;
 
   public static void main(String args []) throws ParseException, FileNotFoundException, TokenMgrError, YAPLException
   {
@@ -46,7 +47,6 @@ public class Parser
     catch (YAPLException e)
     {
 	  CompilerMessage.printError(e, Parser.programName);
-	  e.printStackTrace();
    	} 
   }
 
@@ -63,6 +63,7 @@ public class Parser
       throw new YAPLException(errorNumber, null, t);
     }
   }
+
 }
 
 PARSER_END(Parser)
@@ -185,10 +186,12 @@ SPECIAL_TOKEN :
 }
 
 Type Literal() :
-{}
 {
-  < TRUTHVALUE > { return new BoolType(); }
-| < number > { return new IntType(); }
+	Token t;
+}
+{
+  t = < TRUTHVALUE > { errorToken = t; return new BoolType(); }
+| t = < number > { errorToken = t; return new IntType(); }
 }
 
 TypeAndToken Selector(Type input) throws YAPLException :
@@ -261,6 +264,7 @@ Type PrimaryExpr() throws YAPLException :
     }
   | t = < ident >
   {
+    errorToken = t;
     SymbolImpl sym = lookup(11, null, t);
     if(sym.getKind() != 2 && sym.getKind() != 3 && sym.getKind() != 6) {
 		throw new YAPLException(12, sym, t);
@@ -275,7 +279,6 @@ Type PrimaryExpr() throws YAPLException :
 				throw new YAPLException(20, null, tt.getToken());
 			}
  		  }
- 		  //type = ((ArrayType)type).getSubarray();
       }
     )?
     {
@@ -455,18 +458,48 @@ Type Expr() throws YAPLException :
 
 }
 
-void ArgumentList() throws YAPLException :
-{}
+int ArgumentList(ProcedureType proc, SymbolImpl sym) throws YAPLException :
 {
-  Expr()
+  Type type;
+  int args = 0;
+}
+{
+  type = Expr()
+  {
+    try {
+	    if(!proc.hasParam(args, type)) {
+			throw new YAPLException(30, sym, errorToken, ++args);
+	  	}
+	 } catch (IndexOutOfBoundsException e) {
+	   	if(proc.getParameterCount() > 0) { 
+			throw new YAPLException(30, sym, errorToken, ++args);
+	    }	
+	}
+  	args++;
+  }
   (
-    < colon > Expr()
+    < colon > type = Expr()
+    {
+      	try {
+	    	if(!proc.hasParam(args, type)) {
+				throw new YAPLException(30, sym, errorToken, ++args);
+	  		}
+	 	} catch (IndexOutOfBoundsException e) {
+			throw new YAPLException(30, sym, errorToken, ++args);
+		}  	
+	  	args++;
+  }
   )*
+  {
+  	return args;  
+  }
 }
 
 Type ProcedureCall(boolean checkVoid) throws YAPLException :
 {
 	Token t;
+	boolean hasParams = false;
+	int args = 0;
 }
 {
   t = < ident > < openingParenthesis >
@@ -482,10 +515,21 @@ Type ProcedureCall(boolean checkVoid) throws YAPLException :
 	}
   }  
   (
-    ArgumentList()
+    args = ArgumentList((ProcedureType)sym.getProcedureParams(), sym)
+    {
+		hasParams = true;
+	}	
   )?
-  < closingParenthesis >
+  t = < closingParenthesis >
   {
+	
+	    if(((ProcedureType)sym.getProcedureParams()).getParameterCount() > args || (!hasParams && ((ProcedureType)sym.getProcedureParams()).getParameterCount() > 0)) {
+			throw new YAPLException(32, sym, t);
+	  	}
+	  	if(((ProcedureType)sym.getProcedureParams()).getParameterCount() < args) {
+			throw new YAPLException(30, sym, errorToken, args);
+	 	}  
+		
     return sym.getType();  
   }
 }
@@ -716,7 +760,7 @@ void Decl()  throws YAPLException:
   )*
 }
 
-void FormalParam() throws YAPLException :
+ProcedureType FormalParam(ProcedureType proc) throws YAPLException :
 {
 	Token t;
 	Type type;
@@ -729,16 +773,22 @@ void FormalParam() throws YAPLException :
     sym.setKind(6);
     sym.setType(type);
     table.addSymbol(sym, t);
+
+    proc.addParam(type);
+    return proc;
   }
 }
 
-void FormalParamList()  throws YAPLException :
+Type FormalParamList(ProcedureType proc)  throws YAPLException :
 {}
 {
-  FormalParam()
+  proc = FormalParam(proc)
   (
-    < colon > FormalParam()
+    < colon > FormalParam(proc)
   )*
+  {
+    return proc;
+  }
 }
 
 void Procedure() throws YAPLException :
@@ -755,11 +805,16 @@ void Procedure() throws YAPLException :
     sym.setType(type);
     sym.setGlobal(true);
     table.openScope(true);
-    table.setParentSymbol(sym, t);
   }
   (
-    FormalParamList()
+    type = FormalParamList(new ProcedureType())
+    {
+		sym.setProcedureParams(type);
+    }
   )?
+  {
+    table.setParentSymbol(sym, t);
+  }
   < closingParenthesis > Block() t = < ident > < DELIMITER >
   {
 	if(!table.getNearestParentSymbol(1).getName().equals(t.toString())) {

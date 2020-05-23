@@ -1,6 +1,7 @@
 package yapl.impl.symbolcheck;
 
 import yapl.interfaces.Symbol;
+import yapl.lib.ProcedureType;
 import yapl.lib.Type;
 
 public class SymbolImpl implements Symbol {
@@ -14,6 +15,7 @@ public class SymbolImpl implements Symbol {
 	private int offset;
 	private Symbol nextSymbol;
 	private boolean seen;
+	private Type procedureParams = new ProcedureType();
 
 	
 	public SymbolImpl() {}
@@ -140,4 +142,12 @@ public class SymbolImpl implements Symbol {
 				+ ", nextSymbol=" + nextSymbol + ", seen=" + seen + "]";
 	}
 
+	public Type getProcedureParams() {
+		return procedureParams;
+	}
+
+	public void setProcedureParams(Type procedureParams) {
+		this.procedureParams = procedureParams;
+	}
+	
 }

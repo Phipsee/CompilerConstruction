@@ -8,7 +8,7 @@ import java.util.Stack;
 import yapl.impl.parser.Token;
 import yapl.interfaces.Symbol;
 import yapl.interfaces.Symboltable;
-import yapl.lib.YAPLException;
+import yapl.lib.*;
 
 public class SymboltableImpl implements Symboltable{
 	
@@ -20,10 +20,24 @@ public class SymboltableImpl implements Symboltable{
 	public SymboltableImpl() {
 		openScope(true);
 		try {
-			addSymbol(new SymbolImpl("writeint", 1), null);
-			addSymbol(new SymbolImpl("writebool", 1), null);
-			addSymbol(new SymbolImpl("writeln", 1), null);
-			addSymbol(new SymbolImpl("readint", 1), null);
+			SymbolImpl temp = new SymbolImpl("writeint", 1);
+			temp.setType(new VoidType());
+			ProcedureType type = new ProcedureType();
+			type.addParam(new IntType());
+			temp.setProcedureParams(type);
+			addSymbol(temp, null);
+			temp = new SymbolImpl("writebool", 1);
+			temp.setType(new VoidType());
+			type = new ProcedureType();
+			type.addParam(new BoolType());
+			temp.setProcedureParams(type);
+			addSymbol(temp, null);
+			temp = new SymbolImpl("writeln", 1);
+			temp.setType(new VoidType());
+			addSymbol(temp, null);
+			temp = new SymbolImpl("readint", 1);
+			temp.setType(new IntType());
+			addSymbol(temp, null);
 		} catch (YAPLException e) {
 			e.printStackTrace();
 		}

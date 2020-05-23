@@ -2,7 +2,7 @@ package yapl.lib;
 
 import yapl.impl.parser.Token;
 
-public class TypeAndToken {
+public class TypeAndToken extends Type{
 
 	private Type type;
 	private Token token;

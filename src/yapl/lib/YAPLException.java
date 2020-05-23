@@ -10,6 +10,7 @@ public class YAPLException extends Throwable implements CompilerError{
 	private Symbol sym;
 	private Token token;
 	private Symbol found;
+	private int arg;
 	
 	public YAPLException() {}
 	
@@ -24,6 +25,13 @@ public class YAPLException extends Throwable implements CompilerError{
 		this.sym = sym;
 		this.token = token;
 		this.found = found;
+	}
+	
+	public YAPLException(int errorNumber, Symbol sym, Token token, int arg) {
+		this.errorNumber = errorNumber;
+		this.sym = sym;
+		this.token = token;
+		this.arg = arg;
 	}
 	
 	@Override
@@ -138,11 +146,11 @@ public class YAPLException extends Throwable implements CompilerError{
 		case 29:
 			return "type mismatch in assignment";
 		case 30:
-			return "argument not applicable to procedure";
+			return "argument #" + arg + " not applicable to procedure " + sym.getName();
 		case 31:
 			return "argument not applicable to procedure";
 		case 32:
-			return "too few arguments for procedure";
+			return "too few arguments for procedure " + sym.getName();
 		case 33:
 			return "condition is not a boolean expression";
 		case 34:
