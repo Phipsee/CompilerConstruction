@@ -76,10 +76,9 @@ public class Parser implements ParserConstants {
     throw new Error("Missing return statement in function");
   }
 
-  static final public TypeAndToken Selector(Type input) throws ParseException, YAPLException {
-  Type type;
+  static final public Type Selector(Type input) throws ParseException, YAPLException {
+  Type type = null;
   Token t;
-  TypeAndToken tt = new TypeAndToken();
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case openingBrackets:
       t = jj_consume_token(openingBrackets);
@@ -94,32 +93,32 @@ public class Parser implements ParserConstants {
       break;
     case dot:
       jj_consume_token(dot);
-      t = jj_consume_token(ident);
+      errorToken = jj_consume_token(ident);
       break;
     default:
       jj_la1[1] = jj_gen;
       jj_consume_token(-1);
       throw new ParseException();
     }
-    tt.setToken(t);
     if(input instanceof ArrayType) {
-                tt.setType(((ArrayType)input).getSubarray());
+                type = (((ArrayType)input).getSubarray());
         }
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case openingBrackets:
     case dot:
-      tt = Selector(tt.getType());
+      type = Selector(type);
       break;
     default:
       jj_la1[2] = jj_gen;
       ;
     }
-    {if (true) return tt;}
+    {if (true) return type;}
     throw new Error("Missing return statement in function");
   }
 
   static final public Type ArrayLen() throws ParseException, YAPLException {
         Token t;
+        Type type;
     jj_consume_token(hash);
     t = jj_consume_token(ident);
     SymbolImpl sym = lookup(11, null, t);
@@ -129,23 +128,25 @@ public class Parser implements ParserConstants {
         if(!(sym.getType() instanceof ArrayType) || ((ArrayType)sym.getType()).getDim() < 1) {
                 {if (true) throw new YAPLException(22, null, t);}
         }
-        {if (true) return new IntType();}
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case openingBrackets:
     case dot:
-      Selector(sym.getType());
+      type = Selector(sym.getType());
+            if(!(type instanceof ArrayType) || ((ArrayType)type).getDim() < 1) {
+                        {if (true) throw new YAPLException(22, null, t);}
+                }
       break;
     default:
       jj_la1[3] = jj_gen;
       ;
     }
+    {if (true) return new IntType();}
     throw new Error("Missing return statement in function");
   }
 
   static final public Type PrimaryExpr() throws ParseException, YAPLException {
         Token t = null;
         Type type;
-        TypeAndToken tt = null;
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case TRUTHVALUE:
     case number:
@@ -177,10 +178,10 @@ public class Parser implements ParserConstants {
             switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
             case openingBrackets:
             case dot:
-              tt = Selector(type);
+              type = Selector(type);
                   if(!(sym.getType() instanceof ArrayType) || ((ArrayType)sym.getType()).getDim() <  1) {
                     if(!(sym.getType() instanceof RecordType)) {
-                                {if (true) throw new YAPLException(20, null, tt.getToken());}
+                                {if (true) throw new YAPLException(20, null, errorToken);}
                         }
                   }
               break;
@@ -188,7 +189,7 @@ public class Parser implements ParserConstants {
               jj_la1[4] = jj_gen;
               ;
             }
-                {if (true) return tt != null ? tt.getType() : type;}
+                {if (true) return type;}
             break;
           default:
             jj_la1[5] = jj_gen;
@@ -494,6 +495,7 @@ public class Parser implements ParserConstants {
   static final public void Assignment() throws ParseException, YAPLException {
   Token t;
   Type type;
+  Type l = null;
   Boolean selector = false;
     t = jj_consume_token(ident);
     SymbolImpl sym = lookup(11, null, t);
@@ -503,7 +505,7 @@ public class Parser implements ParserConstants {
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case openingBrackets:
     case dot:
-      Selector(sym.getType());
+      l = Selector(sym.getType());
       selector = true;
       break;
     default:
@@ -515,8 +517,15 @@ public class Parser implements ParserConstants {
     if(!selector && !(sym.getType().getClass().equals(type.getClass()))) {
                 {if (true) throw new YAPLException(29, null, t);}
         }
-        if(selector && !(((ArrayType)sym.getType()).getElem().getClass().equals(type.getClass()))) {
+        if(selector && !(l.getClass().equals(type.getClass()))) {
                 {if (true) throw new YAPLException(29, null, t);}
+        }
+        if(!selector) {
+                if(type instanceof ArrayType) {
+                        if(!(sym.getType() instanceof ArrayType) || ((ArrayType)type).getDim() != ((ArrayType)sym.getType()).getDim()) {
+                                {if (true) throw new YAPLException(29, null, t);}
+                        }
+                }
         }
   }
 
@@ -1108,26 +1117,23 @@ public class Parser implements ParserConstants {
     finally { jj_save(7, xla); }
   }
 
-  static private boolean jj_3_1() {
-    if (jj_scan_token(ident)) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_39() {
-    if (jj_3R_41()) return true;
-    return false;
-  }
-
   static private boolean jj_3R_15() {
     if (jj_scan_token(ident)) return true;
     return false;
   }
 
-  static private boolean jj_3R_37() {
-    Token xsp;
-    xsp = jj_scanpos;
-    if (jj_3R_39()) jj_scanpos = xsp;
-    if (jj_scan_token(BEGIN)) return true;
+  static private boolean jj_3_8() {
+    if (jj_3R_21()) return true;
+    return false;
+  }
+
+  static private boolean jj_3_6() {
+    if (jj_scan_token(ident)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_50() {
+    if (jj_scan_token(minus)) return true;
     return false;
   }
 
@@ -1136,8 +1142,28 @@ public class Parser implements ParserConstants {
     return false;
   }
 
+  static private boolean jj_3R_49() {
+    if (jj_scan_token(plus)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_45() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_49()) {
+    jj_scanpos = xsp;
+    if (jj_3R_50()) return true;
+    }
+    return false;
+  }
+
   static private boolean jj_3R_14() {
     if (jj_3R_22()) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_25() {
+    if (jj_scan_token(ident)) return true;
     return false;
   }
 
@@ -1159,28 +1185,18 @@ public class Parser implements ParserConstants {
     return false;
   }
 
-  static private boolean jj_3R_25() {
-    if (jj_scan_token(ident)) return true;
+  static private boolean jj_3R_20() {
+    if (jj_3R_22()) return true;
     return false;
   }
 
-  static private boolean jj_3_8() {
-    if (jj_3R_21()) return true;
-    return false;
-  }
-
-  static private boolean jj_3_6() {
-    if (jj_scan_token(ident)) return true;
+  static private boolean jj_3R_30() {
+    if (jj_3R_37()) return true;
     return false;
   }
 
   static private boolean jj_3R_47() {
     if (jj_scan_token(openingParenthesis)) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_50() {
-    if (jj_scan_token(minus)) return true;
     return false;
   }
 
@@ -1205,17 +1221,20 @@ public class Parser implements ParserConstants {
     return false;
   }
 
-  static private boolean jj_3R_49() {
-    if (jj_scan_token(plus)) return true;
+  static private boolean jj_3R_19() {
+    if (jj_3R_25()) return true;
     return false;
   }
 
-  static private boolean jj_3R_45() {
+  static private boolean jj_3_7() {
     Token xsp;
     xsp = jj_scanpos;
-    if (jj_3R_49()) {
+    jj_lookingAhead = true;
+    jj_semLA = getToken(2).kind != openingParenthesis;
+    jj_lookingAhead = false;
+    if (!jj_semLA || jj_3R_19()) {
     jj_scanpos = xsp;
-    if (jj_3R_50()) return true;
+    if (jj_3R_20()) return true;
     }
     return false;
   }
@@ -1235,34 +1254,6 @@ public class Parser implements ParserConstants {
     return false;
   }
 
-  static private boolean jj_3R_20() {
-    if (jj_3R_22()) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_30() {
-    if (jj_3R_37()) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_19() {
-    if (jj_3R_25()) return true;
-    return false;
-  }
-
-  static private boolean jj_3_7() {
-    Token xsp;
-    xsp = jj_scanpos;
-    jj_lookingAhead = true;
-    jj_semLA = getToken(2).kind != openingParenthesis;
-    jj_lookingAhead = false;
-    if (!jj_semLA || jj_3R_19()) {
-    jj_scanpos = xsp;
-    if (jj_3R_20()) return true;
-    }
-    return false;
-  }
-
   static private boolean jj_3R_29() {
     if (jj_3R_36()) return true;
     return false;
@@ -1275,11 +1266,6 @@ public class Parser implements ParserConstants {
 
   static private boolean jj_3R_27() {
     if (jj_3R_34()) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_38() {
-    if (jj_3R_40()) return true;
     return false;
   }
 
@@ -1310,18 +1296,13 @@ public class Parser implements ParserConstants {
     return false;
   }
 
-  static private boolean jj_3_4() {
-    if (jj_3R_17()) return true;
-    return false;
-  }
-
-  static private boolean jj_3R_52() {
-    if (jj_scan_token(hash)) return true;
-    return false;
-  }
-
   static private boolean jj_3R_36() {
     if (jj_scan_token(WRITE)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_38() {
+    if (jj_3R_40()) return true;
     return false;
   }
 
@@ -1330,13 +1311,23 @@ public class Parser implements ParserConstants {
     return false;
   }
 
-  static private boolean jj_3R_32() {
-    if (jj_scan_token(NEWOP)) return true;
+  static private boolean jj_3_4() {
+    if (jj_3R_17()) return true;
     return false;
   }
 
   static private boolean jj_3R_35() {
     if (jj_scan_token(RETURN)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_52() {
+    if (jj_scan_token(hash)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_32() {
+    if (jj_scan_token(NEWOP)) return true;
     return false;
   }
 
@@ -1378,18 +1369,28 @@ public class Parser implements ParserConstants {
     return false;
   }
 
-  static private boolean jj_3R_48() {
-    if (jj_3R_52()) return true;
-    return false;
-  }
-
   static private boolean jj_3R_33() {
     if (jj_scan_token(IF)) return true;
     return false;
   }
 
+  static private boolean jj_3R_48() {
+    if (jj_3R_52()) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_39() {
+    if (jj_3R_41()) return true;
+    return false;
+  }
+
   static private boolean jj_3R_54() {
     if (jj_scan_token(number)) return true;
+    return false;
+  }
+
+  static private boolean jj_3R_23() {
+    if (jj_3R_31()) return true;
     return false;
   }
 
@@ -1408,13 +1409,21 @@ public class Parser implements ParserConstants {
     return false;
   }
 
-  static private boolean jj_3R_23() {
-    if (jj_3R_31()) return true;
+  static private boolean jj_3R_17() {
+    if (jj_3R_18()) return true;
     return false;
   }
 
-  static private boolean jj_3R_17() {
-    if (jj_3R_18()) return true;
+  static private boolean jj_3R_37() {
+    Token xsp;
+    xsp = jj_scanpos;
+    if (jj_3R_39()) jj_scanpos = xsp;
+    if (jj_scan_token(BEGIN)) return true;
+    return false;
+  }
+
+  static private boolean jj_3_1() {
+    if (jj_scan_token(ident)) return true;
     return false;
   }
 

@@ -15,6 +15,14 @@ public class ProcedureType extends Type{
 	}
 	
 	public boolean hasParam(int index, Type type) {
+		if(!parameters.get(index).getClass().equals(type.getClass())) {
+			return false;
+		}
+		if(type instanceof ArrayType) {
+			if(((ArrayType)type).getDim() != ((ArrayType)parameters.get(index)).getDim()) {
+				return false;
+			}
+		}
 		return parameters.get(index).getClass().equals(type.getClass()) ? true : false;
 	}
 	
