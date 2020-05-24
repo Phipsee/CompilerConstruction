@@ -156,11 +156,11 @@ public class YAPLException extends Throwable implements CompilerError{
 		case 34:
 			return "readonly not followed by reference type";
 		case 35:
-			return "missing return statement in function";
+			return "missing return statement in function " + sym.getName();
 		case 36:
-			return "returning none or invalid type from function";
+			return "returning none or invalid type from function " + sym.getName();
 		case 37:
-			return "illegal return value in procedure (not a function)";
+			return "illegal return value in procedure " + sym.getName() + " (not a function)";
 		case 38:
 			return "illegal return value in main program";
 		case 39:

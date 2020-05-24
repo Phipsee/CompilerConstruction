@@ -25,6 +25,8 @@ public class Parser
   public static String programName;
   public static SymboltableImpl table = new SymboltableImpl();
   public static Token errorToken;
+  public static Type returnType = null;
+  public static boolean hasReturn = false;
 
   public static void main(String args []) throws ParseException, FileNotFoundException, TokenMgrError, YAPLException
   {
@@ -202,7 +204,12 @@ TypeAndToken Selector(Type input) throws YAPLException :
 }
 {
   (
-    < openingBrackets > type = Expr()
+    t = < openingBrackets > type = Expr()
+    {
+      if(!(input instanceof ArrayType)) {
+		throw new YAPLException(20, null, t);
+      }  
+    }
     t = < closingBrackets >
     {
 	  if(!(type instanceof IntType)) {
@@ -598,9 +605,12 @@ void WhileStatement() throws YAPLException :
 void ReturnStatement() throws YAPLException :
 {}
 {
-  < RETURN >
+  errorToken = < RETURN >
+  {
+    hasReturn = true;
+  }
   (
-    Expr()
+    returnType = Expr()
   )?
 }
 
@@ -635,8 +645,10 @@ void StatementList() throws YAPLException :
   )*
 }
 
-void Block() throws YAPLException :
-{}
+Token Block() throws YAPLException :
+{
+	Token t;
+}
 {
   {
 	table.openScope(false);
@@ -645,9 +657,10 @@ void Block() throws YAPLException :
     Decl()
   )?
   < BEGIN >
-  StatementList() < END >
+  StatementList()  t = < END >
   {
     table.closeScope();
+    return t;
   }
 }
 
@@ -810,6 +823,7 @@ Type FormalParamList(ProcedureType proc)  throws YAPLException :
 void Procedure() throws YAPLException :
 {
 	Token t;
+	Token t2;
 	Type type;
 }
 {
@@ -830,13 +844,24 @@ void Procedure() throws YAPLException :
   )?
   {
     table.setParentSymbol(sym, t);
+    returnType = null;
+    hasReturn = false;
   }
-  < closingParenthesis > Block() t = < ident > < DELIMITER >
+  < closingParenthesis > t2 = Block() t = < ident > < DELIMITER >
   {
 	if(!table.getNearestParentSymbol(1).getName().equals(t.toString())) {
 		throw new YAPLException(13, sym, t);
 	}
     table.closeScope();
+    if(returnType == null && !(sym.getType() instanceof VoidType) && !hasReturn) {
+		throw new YAPLException(35, sym, t2);
+    }
+    if((returnType == null && !(sym.getType() instanceof VoidType)) || (returnType != null && !(sym.getType().getClass().equals(returnType.getClass())))) { 
+		if(sym.getType() instanceof VoidType) {
+			throw new YAPLException(37, sym, errorToken);
+		}  
+		throw new YAPLException(36, sym, errorToken);
+    }  
   }
 }
 
@@ -859,11 +884,17 @@ void Program() throws YAPLException:
     Decl()
   | Procedure()
   )*
+  {
+    returnType = null;
+  }
   < BEGIN > StatementList() < END > t = < ident > < dot >
   {
 	if(!table.getNearestParentSymbol(0).getName().equals(t.toString())) {
 		throw new YAPLException(13, sym, t);
 	}
+	if(returnType != null) {
+		throw new YAPLException(38, null, errorToken);
+	}  
 	table.closeScope();
   }
 }
