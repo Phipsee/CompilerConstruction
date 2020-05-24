@@ -564,9 +564,17 @@ void Assignment() throws YAPLException:
 }
 
 void IfStatement() throws YAPLException :
-{}
 {
-  < IF > Expr() < THEN > StatementList()
+	Type type;
+}
+{
+  < IF > type = Expr()
+  {
+   if(!(type instanceof BoolType)) {
+	throw new YAPLException(33, null, errorToken);
+   }   
+  }
+  < THEN > StatementList()
   (
     < ELSE > StatementList()
   )?
@@ -574,9 +582,17 @@ void IfStatement() throws YAPLException :
 }
 
 void WhileStatement() throws YAPLException :
-{}
 {
-  < WHILE > Expr() < DO > StatementList() < ENDWHILE >
+	Type type;
+}
+{
+  < WHILE > type = Expr()
+  {
+    if(!(type instanceof BoolType)) {
+	 throw new YAPLException(33, null, errorToken);
+    }  
+  }
+  < DO > StatementList() < ENDWHILE >
 }
 
 void ReturnStatement() throws YAPLException :
