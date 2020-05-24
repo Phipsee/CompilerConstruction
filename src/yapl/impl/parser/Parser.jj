@@ -25,6 +25,7 @@ public class Parser
   public static String programName;
   public static SymboltableImpl table = new SymboltableImpl();
   public static Token errorToken;
+  public static RecordType recordType;
   public static Type returnType = null;
   public static boolean hasReturn = false;
 
@@ -55,7 +56,7 @@ public class Parser
   public static SymbolImpl lookup(int errorNumber, SymbolImpl sym, Token t) throws YAPLException {
     SymbolImpl s = (SymbolImpl) table.lookup(t.toString());
     if(s == null) {
-		throw new YAPLException(11, null, t);
+		throw new YAPLException(errorNumber, sym, t);
   	}
   	return s;
   }
@@ -200,6 +201,7 @@ Type Selector(Type input) throws YAPLException :
 {
   Type type = null;
   Token t;
+  boolean record = false;
 }
 {
   (
@@ -215,11 +217,21 @@ Type Selector(Type input) throws YAPLException :
 		throw new YAPLException(21, null, t);
 	  } 
 	}
-  | < dot > errorToken = < ident >
+  |t = < dot > errorToken = < ident > {
+		record = true;
+  }
   )
   {
-    if(input instanceof ArrayType) { 
+    if(input instanceof ArrayType) {
+      if(record) {
+			throw new YAPLException(39, null, t);
+      } 
 		type = (((ArrayType)input).getSubarray());	
+	}
+
+	if(input instanceof RecordType) {
+	  	RecordType rec = (RecordType) input;
+        type = lookup(40, null, errorToken).getType();
 	}
   }
   (
@@ -550,15 +562,16 @@ void Assignment() throws YAPLException:
 {
   Token t;
   Type type;
+  Token identToken;
   Type l = null;
   Boolean selector = false;
 }
 {
-  t = < ident >
+  identToken = < ident >
   {
-    SymbolImpl sym = lookup(11, null, t);
+    SymbolImpl sym = lookup(11, null, identToken);
     if(sym.getKind() != 2 && sym.getKind() != 6) {
-		throw new YAPLException(12, sym, t);
+		throw new YAPLException(12, sym, identToken);
 	}
   }
   (
@@ -568,9 +581,12 @@ void Assignment() throws YAPLException:
   t = < assignOp > type = Expr()
   {
     if(!selector && !(sym.getType().getClass().equals(type.getClass()))) {
-		throw new YAPLException(29, null, t);
+      throw new YAPLException(29, null, t); 
   	}
   	if(selector && !(l.getClass().equals(type.getClass()))) {
+  	  	if(l.getClass().equals(RecordType.class)) {
+			throw new YAPLException(39, null, t);
+  		}
 		throw new YAPLException(29, null, t);
  	}
  	if(!selector) {
@@ -578,7 +594,14 @@ void Assignment() throws YAPLException:
 			if(!(sym.getType() instanceof ArrayType) || ((ArrayType)type).getDim() != ((ArrayType)sym.getType()).getDim()) {
 				throw new YAPLException(29, null, t);
 			}  
-		}   
+		}
+		 if(type instanceof RecordType) {
+                	RecordType other = (RecordType) lookup(11, null, identToken).getType();
+                	if(!((RecordType)type).equalField(other)) {
+                		throw new YAPLException(29, null, t);
+                	}
+                	
+                }
 	}    
   } 
 }
@@ -750,6 +773,9 @@ void VarDecl()  throws YAPLException:
     sym.setKind(2);
     sym.setType(type);
     table.addSymbol(sym, t);
+    if(recordType != null) {
+		recordType.addField(sym);
+    }
   }
   ("," t2 = < ident >
 	{
@@ -759,6 +785,9 @@ void VarDecl()  throws YAPLException:
 	    	sym2.setKind(2);
 	    	sym2.setType(type);
 	    	table.addSymbol(sym2, t2);
+	    	 if(recordType != null) {
+				recordType.addField(sym2);
+   			 }
 	    }	
   	}
   )* < DELIMITER >
@@ -781,6 +810,7 @@ void TypeDecl()  throws YAPLException:
     sym.setKind(4);
     sym.setType(new RecordType());
     table.addSymbol(sym, t);
+    recordType = (RecordType) sym.getType();
   }
   (
     VarDecl()
@@ -788,6 +818,7 @@ void TypeDecl()  throws YAPLException:
   < ENDRECORD > < DELIMITER >
   {
     table.closeScope();
+    recordType = null;
   }
 }
 

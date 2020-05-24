@@ -4,7 +4,6 @@ import yapl.impl.parser.Token;
 import yapl.interfaces.Attrib;
 import yapl.interfaces.BackendBinSM;
 import yapl.interfaces.CodeGen;
-import yapl.interfaces.MemoryRegion;
 import yapl.interfaces.Symbol;
 import yapl.lib.ArrayType;
 import yapl.lib.RecordType;
