@@ -434,24 +434,34 @@ Type CondAndExpr() throws YAPLException :
 Type CreationExpr()  throws YAPLException :
 {
   Type type;
+  Type arraytype;
   ArrayType arr;
-  Token t;
+  Token t = null;
+  Token newOp;
 }
 {
-  < NEWOP > type = NonArrayType()
+  newOp = < NEWOP > type = NonArrayType()
   {
     arr = new ArrayType(0, type);
   }
   (
-    t = < openingBrackets > type = Expr() < closingBrackets >
+    t = < openingBrackets > arraytype = Expr() < closingBrackets >
     {
-      	if(!(type instanceof IntType)) {
+      	if(!(arraytype instanceof IntType)) {
 			throw new YAPLException(21, null, t);
-        }  
+        }
+
 		arr.incDim();
     }
   )*
   {
+    
+        if(t == null) {
+          	if(!(type instanceof RecordType)) {
+				throw new YAPLException(41, null, newOp);
+          	}
+			return type;
+        } 
     return arr;
   }
 }
