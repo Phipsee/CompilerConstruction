@@ -311,6 +311,8 @@ Type PrimaryExpr() throws YAPLException :
   	}
   	type = sym.getType();
   	var = sym;
+
+  	codegen.loadVariable(sym);
   }
     (
       type = Selector(type)
@@ -618,6 +620,9 @@ void Assignment() throws YAPLException:
   )?
   t = < assignOp > type = Expr()
   {
+
+	codegen.storeVariable(sym);
+    
     if(!selector && !(sym.getType().getClass().equals(type.getClass()))) {
       throw new YAPLException(29, null, t); 
   	}
@@ -819,6 +824,9 @@ void VarDecl()  throws YAPLException:
     sym.setName(t.toString());
     sym.setKind(2);
     sym.setType(type);
+
+	codegen.allocVariable(sym);
+    
     table.addSymbol(sym, t);
     if(recordType != null) {
 		recordType.addField(sym);
@@ -831,6 +839,9 @@ void VarDecl()  throws YAPLException:
 	    	sym2.setName(t2.toString());
 	    	sym2.setKind(2);
 	    	sym2.setType(type);
+
+			codegen.allocVariable(sym2);
+	    	
 	    	table.addSymbol(sym2, t2);
 	    	 if(recordType != null) {
 				recordType.addField(sym2);
