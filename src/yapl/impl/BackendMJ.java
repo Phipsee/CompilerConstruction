@@ -26,6 +26,35 @@ public class BackendMJ implements BackendBinSM{
 	private ArrayList<Jump> jumps = new ArrayList<Jump>();
 	
 	private int currSP = 0;
+	
+	public BackendMJ() {
+		// writeint(int i)
+		enterProc("writeint", 1, false);
+		loadWord(MemoryRegion.STACK, 0);
+		writeInteger();
+		exitProc("writeint_end");
+		// writebool(bool b)
+		enterProc("writebool", 1, false);
+		loadWord(MemoryRegion.STACK, 0);
+		branchIf(false, "false");
+		int addr = allocStringConstant("True");
+		writeString(addr);
+		jump("writebool_end");
+		assignLabel("false");
+		addr = allocStringConstant("False");
+		writeString(addr);
+		exitProc("writebool_end");
+		// writeln()
+		enterProc("writeln", 0, false);
+		addr = allocStringConstant("\n");
+		writeString(addr);
+		exitProc("writeln_end");
+		//readint()
+		enterProc("readint", 0, false);
+		code.add((byte) 0x32);
+		codeSize++;
+		exitProc("readint_end");
+	}
 
 	/**
 	 * Generates the header for the output file

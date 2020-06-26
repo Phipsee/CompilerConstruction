@@ -113,4 +113,7 @@ public interface Attrib {
 	/** Set the register number (for register operands). */
 	public void setRegister(byte register);
 	
+	public void setInteger(int i);
+	
+	public int getInteger();
 }

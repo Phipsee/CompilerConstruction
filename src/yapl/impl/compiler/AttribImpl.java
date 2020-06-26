@@ -12,6 +12,8 @@ public class AttribImpl implements Attrib {
 	private boolean readonly;
 	private int offset;
 	private byte register;
+	
+	private int integer;
 
 	@Override
 	public byte getKind() {
@@ -82,6 +84,16 @@ public class AttribImpl implements Attrib {
 	@Override
 	public void setRegister(byte register) {
 		this.register = register;
+	}
+
+	@Override
+	public void setInteger(int i) {
+		integer = i;
+	}
+
+	@Override
+	public int getInteger() {
+		return integer;
 	}
 
 }

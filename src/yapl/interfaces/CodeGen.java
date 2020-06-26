@@ -1,5 +1,9 @@
 package yapl.interfaces;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.List;
+
 import yapl.impl.parser.Token;
 import yapl.lib.ArrayType;
 import yapl.lib.RecordType;
@@ -337,7 +341,7 @@ public interface CodeGen {
 	 * @return a new Attrib object representing the procedure's return value;
 	 *         <code>null</code> if the procedure does not return a value.
 	 */
-	public Attrib callProc(Symbol proc, Attrib[] args) 
+	public Attrib callProc(Symbol proc, List<Attrib> args) 
 	throws YAPLException;
 
 	/**
@@ -358,5 +362,13 @@ public interface CodeGen {
 
 	/** Generate code unconditionally jumping to <code>label</code>. */
 	public void jump(String label);
+	
+	public void setOutFile(FileOutputStream outfile);
+	
+	public void writeObjectFile() throws IOException;
 
+	public void storeVariable(Symbol sym);
+	
+	public void loadVariable(Symbol sym);
+	
 }

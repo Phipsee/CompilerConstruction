@@ -11,12 +11,12 @@ package yapl.impl.parser;
 import java.io.*;
 
 import yapl.impl.BackendMJ;
-import yapl.impl.compiler.CodeGenAsMJ;
+import yapl.impl.compiler.*;
 import yapl.impl.symbolcheck.SymbolImpl;
 import yapl.impl.symbolcheck.SymboltableImpl;
-import yapl.interfaces.BackendBinSM;
-import yapl.interfaces.CodeGen;
+import yapl.interfaces.*;
 import yapl.lib.*;
+import java.util.*;
 
 
 
@@ -28,14 +28,17 @@ public class Parser
   public static RecordType recordType;
   public static Type returnType = null;
   public static boolean hasReturn = false;
+  public static SymbolImpl var = null;
 
-  public static void main(String args []) throws ParseException, FileNotFoundException, TokenMgrError, YAPLException
+  public static BackendBinSM backend = new BackendMJ();
+  public static CodeGen codegen = new CodeGenAsMJ(backend);
+
+  public static void main(String args []) throws ParseException, FileNotFoundException, TokenMgrError, YAPLException, IOException
   {
     try
     {
       Parser parser = new Parser(new FileInputStream(args [0]));
-      BackendBinSM backend = new BackendMJ();
-      CodeGen codegen = new CodeGenAsMJ(backend);
+      codegen.setOutFile(new FileOutputStream(args[1]));
       parser.Program();
       CompilerMessage.printOK(Parser.programName);
     }
@@ -188,13 +191,26 @@ SPECIAL_TOKEN :
   < comment: "/*" (~["*"])* "*" (~["*","/"] (~["*"])* "*" | "*")* "/">
 }
 
-Type Literal() :
+Type Literal() throws YAPLException :
 {
 	Token t;
+	Attrib a = new AttribImpl();
 }
 {
-  t = < TRUTHVALUE > { errorToken = t; return new BoolType(); }
-| t = < number > { errorToken = t; return new IntType(); }
+  t = < TRUTHVALUE >
+  	{
+  	  	errorToken = t;
+  		a.setInteger(t.toString().equals("True") ? 1 : 0);
+  		codegen.loadValue(a);
+  		return new BoolType();
+  	}
+| t = < number >
+	{
+	  	errorToken = t;
+		a.setInteger(Integer.parseInt(t.toString()));
+		codegen.loadValue(a);
+		return new IntType();
+	}
 }
 
 Type Selector(Type input) throws YAPLException :
@@ -294,6 +310,7 @@ Type PrimaryExpr() throws YAPLException :
 		throw new YAPLException(12, sym, t);
   	}
   	type = sym.getType();
+  	var = sym;
   }
     (
       type = Selector(type)
@@ -500,6 +517,10 @@ int ArgumentList(ProcedureType proc, SymbolImpl sym) throws YAPLException :
 {
   type = Expr()
   {
+	if(var != null) { 
+		codegen.loadVariable(var);
+		var = null;
+  	}
     try {
 	    if(!proc.hasParam(args, type)) {
 			throw new YAPLException(30, sym, errorToken, ++args);
@@ -514,6 +535,10 @@ int ArgumentList(ProcedureType proc, SymbolImpl sym) throws YAPLException :
   (
     < colon > type = Expr()
     {
+		if(var != null) { 
+			codegen.loadVariable(var);
+			var = null;
+  		}
       	try {
 	    	if(!proc.hasParam(args, type)) {
 				throw new YAPLException(30, sym, errorToken, ++args);
@@ -534,6 +559,7 @@ Type ProcedureCall(boolean checkVoid) throws YAPLException :
 	Token t;
 	boolean hasParams = false;
 	int args = 0;
+	List<Attrib > attribs;
 }
 {
   t = < ident > < openingParenthesis >
@@ -562,7 +588,9 @@ Type ProcedureCall(boolean checkVoid) throws YAPLException :
 	  	}
 	  	if(((ProcedureType)sym.getProcedureParams()).getParameterCount() < args) {
 			throw new YAPLException(30, sym, errorToken, args);
-	 	}  
+	 	}
+	 	
+		codegen.callProc(sym, null);
 		
     return sym.getType();  
   }
@@ -660,10 +688,15 @@ void ReturnStatement() throws YAPLException :
   )?
 }
 
-void WriteStatement() :
-{}
+void WriteStatement() throws YAPLException :
 {
-  < WRITE > < string >
+	Token t;
+}
+{
+  < WRITE > t = < string >
+  {
+    codegen.writeString(t.toString());
+  }
 }
 
 void Statement() throws YAPLException :
@@ -762,6 +795,10 @@ void ConstDecl() throws YAPLException :
     sym.setName(t.toString());
     sym.setKind(3);
     sym.setType(type);
+
+	codegen.allocVariable(sym);
+	codegen.storeVariable(sym);
+    
     table.addSymbol(sym, t);
   }
 }
@@ -919,7 +956,7 @@ void Procedure() throws YAPLException :
   }
 }
 
-void Program() throws YAPLException:
+void Program() throws YAPLException, IOException:
 {
   Token t;
 }
@@ -933,6 +970,8 @@ void Program() throws YAPLException:
     sym.setName(t.toString());
     sym.setKind(0);
     table.setParentSymbol(sym, t);
+
+    codegen.enterProc(sym);
   }
   (
     Decl()
@@ -943,6 +982,9 @@ void Program() throws YAPLException:
   }
   < BEGIN > StatementList() < END > t = < ident > < dot >
   {
+	codegen.exitProc(sym);
+	codegen.writeObjectFile();
+    
 	if(!table.getNearestParentSymbol(0).getName().equals(t.toString())) {
 		throw new YAPLException(13, sym, t);
 	}

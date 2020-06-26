@@ -1,9 +1,14 @@
 package yapl.impl.compiler;
 
+import java.io.FileOutputStream;
+import java.io.IOException;
+import java.util.List;
+
 import yapl.impl.parser.Token;
 import yapl.interfaces.Attrib;
 import yapl.interfaces.BackendBinSM;
 import yapl.interfaces.CodeGen;
+import yapl.interfaces.MemoryRegion;
 import yapl.interfaces.Symbol;
 import yapl.lib.ArrayType;
 import yapl.lib.RecordType;
@@ -15,6 +20,8 @@ public class CodeGenAsMJ implements CodeGen {
 
 	private BackendBinSM backend;
 	private int labelId = 1;
+	
+	private FileOutputStream outfile;
 
 	@Override
 	public String newLabel() {
@@ -28,7 +35,7 @@ public class CodeGenAsMJ implements CodeGen {
 
 	@Override
 	public byte loadValue(Attrib attr) throws YAPLException {
-
+		backend.loadConst(attr.getInteger());
 		return 0;
 	}
 
@@ -46,11 +53,11 @@ public class CodeGenAsMJ implements CodeGen {
 
 	@Override
 	public void allocVariable(Symbol sym) throws YAPLException {
-		if (sym.isGlobal()) {
-			sym.setOffset(backend.paramOffset(backend.allocStaticData(backend.wordSize())));
-		} else {
-			sym.setOffset(backend.paramOffset(backend.allocStack(backend.wordSize())));
-		}
+//		if (sym.isGlobal()) {
+			sym.setOffset(backend.allocStaticData(1)/4);
+//		} else {
+//			sym.setOffset(backend.paramOffset(backend.allocStack(1)));
+//		}
 	}
 
 	@Override
@@ -134,13 +141,16 @@ public class CodeGenAsMJ implements CodeGen {
 
 	@Override
 	public void enterProc(Symbol proc) throws YAPLException {
-		// TODO Auto-generated method stub
+		if(proc.getName().contains("test")) {
+			backend.enterProc(proc.getName(), 0, true);
+		}else {
+			// not main funtion
+		}
 	}
 
 	@Override
 	public void exitProc(Symbol proc) throws YAPLException {
-		// TODO Auto-generated method stub
-
+		backend.exitProc(proc.getName());
 	}
 
 	@Override
@@ -150,8 +160,8 @@ public class CodeGenAsMJ implements CodeGen {
 	}
 
 	@Override
-	public Attrib callProc(Symbol proc, Attrib[] args) throws YAPLException {
-		// TODO Auto-generated method stub
+	public Attrib callProc(Symbol proc, List<Attrib> args) throws YAPLException {
+		backend.callProc(proc.getName());
 		return null;
 	}
 
@@ -179,6 +189,26 @@ public class CodeGenAsMJ implements CodeGen {
 
 	public CodeGenAsMJ(BackendBinSM backend) {
 		this.backend = backend;
+	}
+	
+	@Override
+	public void writeObjectFile() throws IOException {
+		backend.writeObjectFile(outfile);
+	}
+	
+	@Override
+	public void setOutFile(FileOutputStream outfile) {
+		this.outfile = outfile;
+	}
+
+	@Override
+	public void storeVariable(Symbol sym) {
+		backend.storeWord(MemoryRegion.STATIC, sym.getOffset());
+	}
+
+	@Override
+	public void loadVariable(Symbol sym) {
+		backend.loadWord(MemoryRegion.STATIC, sym.getOffset());
 	}
 
 }
