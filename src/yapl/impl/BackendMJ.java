@@ -362,7 +362,7 @@ public class BackendMJ implements BackendBinSM{
 	public void or() {
 		add();
 		loadConst(1);
-		isGreater();
+		isGreaterOrEqual();
 	}
 
 	/*--- comparison operations ---*/

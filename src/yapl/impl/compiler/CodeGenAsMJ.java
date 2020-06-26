@@ -117,13 +117,57 @@ public class CodeGenAsMJ implements CodeGen {
 
 	@Override
 	public Attrib op1(Token op, Attrib x) throws YAPLException {
-		// TODO Auto-generated method stub
+		switch (op.toString()) {
+			case "-":
+				backend.neg();
+			default:
+				break;
+		}
 		return null;
 	}
 
 	@Override
 	public Attrib op2(Attrib x, Token op, Attrib y) throws YAPLException {
-		// TODO Auto-generated method stub
+		switch (op.toString()) {
+			case "*":
+				backend.mul();
+				break;
+			case "/":
+				backend.div();
+				break;
+			case "%":
+				backend.mod();
+				break;
+			case "+":
+				backend.add();
+				break;
+			case "-":
+				backend.sub();
+				break;
+			case "And":
+				backend.and();
+				break;
+			case "Or":
+				backend.or();
+				break;
+			case "==":
+				backend.isEqual();
+				break;
+			case "<":
+				backend.isLess();
+				break;
+			case "<=":
+				backend.isLessOrEqual();
+				break;
+			case ">=":
+				backend.isGreaterOrEqual();
+				break;
+			case ">":
+				backend.isGreater();
+				break;
+			default:
+				break;
+		}	
 		return null;
 	}
 

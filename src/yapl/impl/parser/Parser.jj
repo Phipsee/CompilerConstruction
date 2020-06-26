@@ -344,7 +344,10 @@ Type UnaryExpr() throws YAPLException :
   {
     if(t != null && !(type instanceof IntType)) {
 		throw new YAPLException(23, null, t);
-    } 
+    }
+    if(t != null) {
+	    codegen.op1(t, null);
+  	}  
     return type;
   }
 }
@@ -361,6 +364,7 @@ Type MulExpr() throws YAPLException :
     t = MulOp() type2 = UnaryExpr()
     {
       isValidIntOp(t, type1, type2, 24);
+      codegen.op2(null, t, null);
     }
   )*
   {
@@ -380,6 +384,7 @@ Type AddExpr() throws YAPLException :
     t = AddOp() type2 = MulExpr()
     {
       isValidIntOp(t, type1, type2, 24);
+      codegen.op2(null, t, null);
     }
   )*
   {
@@ -399,6 +404,7 @@ Type RelExpr() throws YAPLException :
     t = RelOp() type2 = AddExpr()
     {
       isValidIntOp(t, type1, type2, 25);
+      codegen.op2(null, t, null);
       return new BoolType();
     }
   )?
@@ -421,6 +427,7 @@ Type EqualExpr() throws YAPLException :
 	    if(!(type1.getClass().equals(type2.getClass()))) {
 			throw new YAPLException(26, null, t);
 	  	}
+	  	codegen.op2(null, t, null);
 	  	return new BoolType();
     }
   )?
@@ -443,7 +450,8 @@ Type CondAndExpr() throws YAPLException :
 	    if(!(type1 instanceof BoolType) || !(type2 instanceof BoolType)) {
 			throw new YAPLException(24, null, t);
 	  	}
-    }  	
+	  	codegen.op2(null, t, null);
+    }
   )*
   {
     return type1;
@@ -499,6 +507,7 @@ Type Expr() throws YAPLException :
 		if(!(type1 instanceof BoolType) || !(type2 instanceof BoolType)) {
 			throw new YAPLException(24, null, t);
   		}
+  		codegen.op2(null, t, null);
     }
   )*
   {
@@ -519,10 +528,6 @@ int ArgumentList(ProcedureType proc, SymbolImpl sym) throws YAPLException :
 {
   type = Expr()
   {
-	if(var != null) { 
-		codegen.loadVariable(var);
-		var = null;
-  	}
     try {
 	    if(!proc.hasParam(args, type)) {
 			throw new YAPLException(30, sym, errorToken, ++args);
@@ -537,10 +542,6 @@ int ArgumentList(ProcedureType proc, SymbolImpl sym) throws YAPLException :
   (
     < colon > type = Expr()
     {
-		if(var != null) { 
-			codegen.loadVariable(var);
-			var = null;
-  		}
       	try {
 	    	if(!proc.hasParam(args, type)) {
 				throw new YAPLException(30, sym, errorToken, ++args);
