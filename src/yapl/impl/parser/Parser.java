@@ -929,6 +929,7 @@ public class Parser implements ParserConstants {
     sym.setType(type);
     sym.setGlobal(true);
     table.openScope(true);
+    table.setParentSymbol(sym, t);
     switch ((jj_ntk==-1)?jj_ntk():jj_ntk) {
     case INT:
     case BOOL:
@@ -940,7 +941,6 @@ public class Parser implements ParserConstants {
       jj_la1[32] = jj_gen;
       ;
     }
-    table.setParentSymbol(sym, t);
     returnType = null;
     hasReturn = false;
     jj_consume_token(closingParenthesis);

@@ -889,6 +889,7 @@ void Procedure() throws YAPLException :
     sym.setType(type);
     sym.setGlobal(true);
     table.openScope(true);
+    table.setParentSymbol(sym, t);
   }
   (
     type = FormalParamList(new ProcedureType())
@@ -897,7 +898,6 @@ void Procedure() throws YAPLException :
     }
   )?
   {
-    table.setParentSymbol(sym, t);
     returnType = null;
     hasReturn = false;
   }
