@@ -223,9 +223,7 @@ public class CodeGenAsMJ implements CodeGen {
 
 	@Override
 	public void branchIfFalse(Attrib condition, String label) throws YAPLException {
-		boolean cond = loadValue(condition) == 0 ? false : true;
-		backend.branchIf(cond, label);
-
+		backend.branchIf(false, label);
 	}
 
 	@Override

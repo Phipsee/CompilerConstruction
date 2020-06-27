@@ -29,6 +29,7 @@ public class Parser
   public static Type returnType = null;
   public static boolean hasReturn = false;
   public static SymbolImpl var = null;
+  public static int labelCount = 0;
 
   public static BackendBinSM backend = new BackendMJ();
   public static CodeGen codegen = new CodeGenAsMJ(backend);
@@ -671,14 +672,21 @@ void IfStatement() throws YAPLException :
 {
   < IF > type = Expr()
   {
+   codegen.branchIfFalse(null, "L" + labelCount++);
+    
    if(!(type instanceof BoolType)) {
 	throw new YAPLException(33, null, errorToken);
    }   
   }
   < THEN > StatementList()
+  {
+    codegen.jump("L" + labelCount++);
+  }
   (
+    { codegen.assignLabel("L" + (labelCount-2)); }
     < ELSE > StatementList()
   )?
+  { codegen.assignLabel("L" + (labelCount-1)); }
   < ENDIF >
 }
 
@@ -687,13 +695,25 @@ void WhileStatement() throws YAPLException :
 	Type type;
 }
 {
+  {
+    codegen.assignLabel("L" + labelCount++);
+  }
   < WHILE > type = Expr()
   {
+	codegen.branchIfFalse(null, "L" + labelCount++);
+    
     if(!(type instanceof BoolType)) {
 	 throw new YAPLException(33, null, errorToken);
     }  
   }
-  < DO > StatementList() < ENDWHILE >
+  < DO > StatementList()
+  {
+    codegen.jump("L" + (labelCount-2));
+  }
+  < ENDWHILE >
+  {
+    codegen.assignLabel("L" + (labelCount-1));
+  }
 }
 
 void ReturnStatement() throws YAPLException :
