@@ -273,6 +273,9 @@ Type ArrayLen() throws YAPLException :
 	if(!(sym.getType() instanceof ArrayType) || ((ArrayType)sym.getType()).getDim() < 1) {
 		throw new YAPLException(22, null, t);
 	}
+
+	codegen.loadVariable(sym);
+	codegen.arrayLength(null);
   }
   (
     type = Selector(sym.getType())
@@ -322,6 +325,8 @@ Type PrimaryExpr() throws YAPLException :
 				throw new YAPLException(20, null, errorToken);
 			}
  		  }
+
+ 		  codegen.loadArrayElement();
       }
     )?
     {
@@ -488,8 +493,11 @@ Type CreationExpr()  throws YAPLException :
 				throw new YAPLException(41, null, newOp);
           	}
 			return type;
-        } 
-    return arr;
+        }
+
+		codegen.allocArray(arr);
+        
+    	return arr;
   }
 }
 
@@ -614,15 +622,21 @@ void Assignment() throws YAPLException:
     if(sym.getKind() != 2 && sym.getKind() != 6) {
 		throw new YAPLException(12, sym, identToken);
 	}
+
   }
   (
+    { codegen.loadVariable(sym); }
     l = Selector(sym.getType())
     { selector = true; }
   )?
   t = < assignOp > type = Expr()
   {
 
-	codegen.storeVariable(sym);
+	if(selector && sym.getType() instanceof ArrayType) {
+		codegen.storeArrayElement();
+	} else {   
+		codegen.storeVariable(sym);
+	}	
     
     if(!selector && !(sym.getType().getClass().equals(type.getClass()))) {
       throw new YAPLException(29, null, t); 

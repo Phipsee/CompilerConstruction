@@ -371,4 +371,8 @@ public interface CodeGen {
 	
 	public void loadVariable(Symbol sym);
 	
+	public void storeArrayElement();
+	
+	public void loadArrayElement();
+	
 }

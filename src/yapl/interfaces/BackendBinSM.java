@@ -155,7 +155,7 @@ public interface BackendBinSM
      * defined by the number of prior {@link #storeArrayDim(int)} calls.
      * The array start address is returned on the expression stack at run-time.
      */
-    public void allocArray();
+    public void allocArray(int i);
 
     /*--- load/store operations ---*/
     

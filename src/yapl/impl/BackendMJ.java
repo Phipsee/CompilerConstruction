@@ -213,9 +213,9 @@ public class BackendMJ implements BackendBinSM{
 	}
 
 	@Override
-	public void allocArray() {
+	public void allocArray(int i) {
 		code.add((byte) 0x20);
-		code.add((byte) 0x01);
+		code.add(i == 0 ? (byte) 0x00 : (byte) 0x01);
 		codeSize += 2;
 	}
 

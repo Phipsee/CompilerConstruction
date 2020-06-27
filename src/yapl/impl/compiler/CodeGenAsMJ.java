@@ -11,6 +11,7 @@ import yapl.interfaces.CodeGen;
 import yapl.interfaces.MemoryRegion;
 import yapl.interfaces.Symbol;
 import yapl.lib.ArrayType;
+import yapl.lib.IntType;
 import yapl.lib.RecordType;
 import yapl.lib.YAPLException;
 
@@ -54,7 +55,7 @@ public class CodeGenAsMJ implements CodeGen {
 	@Override
 	public void allocVariable(Symbol sym) throws YAPLException {
 //		if (sym.isGlobal()) {
-			sym.setOffset(backend.allocStaticData(1)/4);
+			sym.setOffset(backend.allocStaticData(1)/backend.wordSize());
 //		} else {
 //			sym.setOffset(backend.paramOffset(backend.allocStack(1)));
 //		}
@@ -74,7 +75,7 @@ public class CodeGenAsMJ implements CodeGen {
 
 	@Override
 	public Attrib allocArray(ArrayType arrayType) throws YAPLException {
-
+		backend.allocArray(arrayType.getElem() instanceof IntType ? 1 : 0);
 		return null;
 	}
 
@@ -104,7 +105,8 @@ public class CodeGenAsMJ implements CodeGen {
 
 	@Override
 	public Attrib arrayLength(Attrib arr) throws YAPLException {
-		return arr;
+		backend.arrayLength();
+		return null;
 	}
 
 	@Override
@@ -253,6 +255,16 @@ public class CodeGenAsMJ implements CodeGen {
 	@Override
 	public void loadVariable(Symbol sym) {
 		backend.loadWord(MemoryRegion.STATIC, sym.getOffset());
+	}
+
+	@Override
+	public void storeArrayElement() {
+		backend.storeArrayElement();
+	}
+
+	@Override
+	public void loadArrayElement() {
+		backend.loadArrayElement();
 	}
 
 }
