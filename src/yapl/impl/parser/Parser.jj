@@ -30,6 +30,8 @@ public class Parser
   public static boolean hasReturn = false;
   public static SymbolImpl var = null;
   public static int labelCount = 0;
+  public static int countLocalOffset = 0;
+  public static int incLabels = 1;
 
   public static BackendBinSM backend = new BackendMJ();
   public static CodeGen codegen = new CodeGenAsMJ(backend);
@@ -274,7 +276,7 @@ Type ArrayLen() throws YAPLException :
 	if(!(sym.getType() instanceof ArrayType) || ((ArrayType)sym.getType()).getDim() < 1) {
 		throw new YAPLException(22, null, t);
 	}
-
+	
 	codegen.loadVariable(sym);
 	codegen.arrayLength(null);
   }
@@ -316,7 +318,7 @@ Type PrimaryExpr() throws YAPLException :
   	type = sym.getType();
   	var = sym;
 
-  	codegen.loadVariable(sym);
+	codegen.loadVariable(sym);
   }
     (
       type = Selector(type)
@@ -330,7 +332,7 @@ Type PrimaryExpr() throws YAPLException :
  		  codegen.loadArrayElement();
       }
     )?
-    {
+    {     
 		return type;
     }
   )
@@ -668,6 +670,7 @@ void Assignment() throws YAPLException:
 void IfStatement() throws YAPLException :
 {
 	Type type;
+	Boolean elseBlock = false;
 }
 {
   < IF > type = Expr()
@@ -683,24 +686,34 @@ void IfStatement() throws YAPLException :
     codegen.jump("L" + labelCount++);
   }
   (
-    { codegen.assignLabel("L" + (labelCount-2)); }
+    {
+      codegen.assignLabel("L" + (labelCount-2));
+      elseBlock = true;
+    }
     < ELSE > StatementList()
   )?
-  { codegen.assignLabel("L" + (labelCount-1)); }
+  {
+    codegen.assignLabel("L" + (labelCount-1));
+    if (!elseBlock) { 
+		codegen.assignLabel("L" + (labelCount-2));
+	}
+  }
   < ENDIF >
 }
 
 void WhileStatement() throws YAPLException :
 {
 	Type type;
+	int labelCountWhile = 100 * incLabels;
 }
 {
   {
-    codegen.assignLabel("L" + labelCount++);
+    incLabels++;
+    codegen.assignLabel("L" + labelCountWhile++);
   }
   < WHILE > type = Expr()
   {
-	codegen.branchIfFalse(null, "L" + labelCount++);
+	codegen.branchIfFalse(null, "L" + labelCountWhile++);
     
     if(!(type instanceof BoolType)) {
 	 throw new YAPLException(33, null, errorToken);
@@ -708,11 +721,11 @@ void WhileStatement() throws YAPLException :
   }
   < DO > StatementList()
   {
-    codegen.jump("L" + (labelCount-2));
+    codegen.jump("L" + (labelCountWhile-2));
   }
   < ENDWHILE >
   {
-    codegen.assignLabel("L" + (labelCount-1));
+    codegen.assignLabel("L" + (labelCountWhile-1));
   }
 }
 
@@ -726,6 +739,9 @@ void ReturnStatement() throws YAPLException :
   (
     returnType = Expr()
   )?
+  {
+    codegen.exitProc(new SymbolImpl("", 0));
+  }
 }
 
 void WriteStatement() throws YAPLException :
@@ -938,6 +954,8 @@ ProcedureType FormalParam(ProcedureType proc) throws YAPLException :
     sym.setName(t.toString());
     sym.setKind(6);
     sym.setType(type);
+    sym.setGlobal(false);
+    sym.setOffset(countLocalOffset++);
     table.addSymbol(sym, t);
 
     proc.addParam(type);
@@ -953,6 +971,7 @@ Type FormalParamList(ProcedureType proc)  throws YAPLException :
     < colon > FormalParam(proc)
   )*
   {
+    countLocalOffset = 0;
     return proc;
   }
 }
@@ -983,6 +1002,8 @@ void Procedure() throws YAPLException :
   {
     returnType = null;
     hasReturn = false;
+
+    codegen.enterProc(sym);
   }
   < closingParenthesis > t2 = Block() t = < ident > < DELIMITER >
   {
@@ -998,7 +1019,9 @@ void Procedure() throws YAPLException :
 			throw new YAPLException(37, sym, errorToken);
 		}  
 		throw new YAPLException(36, sym, errorToken);
-    }  
+    }
+
+    codegen.exitProc(sym);  
   }
 }
 
@@ -1020,13 +1043,13 @@ void Program() throws YAPLException, IOException:
     codegen.enterProc(sym);
   }
   (
-    Decl()
-  | Procedure()
+    { codegen.assignLabel("Decl"); } Decl() { codegen.jump("Begin_" + sym.getName()); }
+  | { codegen.jump("Decl"); } Procedure()
   )*
   {
     returnType = null;
   }
-  < BEGIN > StatementList() < END > t = < ident > < dot >
+  < BEGIN > { codegen.assignLabel("Begin_" + sym.getName()); } StatementList() < END > t = < ident > < dot >
   {
 	codegen.exitProc(sym);
 	codegen.writeObjectFile();

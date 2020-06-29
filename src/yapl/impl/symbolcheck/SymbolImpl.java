@@ -11,7 +11,7 @@ public class SymbolImpl implements Symbol {
 	private Type type;
 	private boolean isReference;
 	private boolean isReadOnly;
-	private boolean isGlobal;
+	private boolean isGlobal = true;
 	private int offset;
 	private Symbol nextSymbol;
 	private boolean seen;

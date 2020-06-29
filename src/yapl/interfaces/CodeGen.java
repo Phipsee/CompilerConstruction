@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.List;
 
 import yapl.impl.parser.Token;
+import yapl.impl.symbolcheck.SymbolImpl;
 import yapl.lib.ArrayType;
 import yapl.lib.RecordType;
 import yapl.lib.Type;

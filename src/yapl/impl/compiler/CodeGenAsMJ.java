@@ -5,6 +5,7 @@ import java.io.IOException;
 import java.util.List;
 
 import yapl.impl.parser.Token;
+import yapl.impl.symbolcheck.SymbolImpl;
 import yapl.interfaces.Attrib;
 import yapl.interfaces.BackendBinSM;
 import yapl.interfaces.CodeGen;
@@ -12,6 +13,7 @@ import yapl.interfaces.MemoryRegion;
 import yapl.interfaces.Symbol;
 import yapl.lib.ArrayType;
 import yapl.lib.IntType;
+import yapl.lib.ProcedureType;
 import yapl.lib.RecordType;
 import yapl.lib.YAPLException;
 
@@ -190,13 +192,13 @@ public class CodeGenAsMJ implements CodeGen {
 		if(proc.getName().contains("test")) {
 			backend.enterProc(proc.getName(), 0, true);
 		}else {
-			// not main funtion
+			backend.enterProc(proc.getName(), ((ProcedureType) ((SymbolImpl) proc).getProcedureParams()).getParameterCount(), false);
 		}
 	}
 
 	@Override
 	public void exitProc(Symbol proc) throws YAPLException {
-		backend.exitProc(proc.getName());
+		backend.exitProc(proc.getName() + "_end");
 	}
 
 	@Override
@@ -252,7 +254,11 @@ public class CodeGenAsMJ implements CodeGen {
 
 	@Override
 	public void loadVariable(Symbol sym) {
-		backend.loadWord(MemoryRegion.STATIC, sym.getOffset());
+		if(sym.isGlobal()) {
+			backend.loadWord(MemoryRegion.STATIC, sym.getOffset());
+		} else {
+			backend.loadWord(MemoryRegion.STACK, sym.getOffset());
+		}
 	}
 
 	@Override
