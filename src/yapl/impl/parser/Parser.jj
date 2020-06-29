@@ -29,9 +29,9 @@ public class Parser
   public static Type returnType = null;
   public static boolean hasReturn = false;
   public static SymbolImpl var = null;
-  public static int labelCount = 0;
   public static int countLocalOffset = 0;
-  public static int incLabels = 1;
+  public static int incWhileLabels = 1;
+  public static int incIfLabels = 1; 
 
   public static BackendBinSM backend = new BackendMJ();
   public static CodeGen codegen = new CodeGenAsMJ(backend);
@@ -671,11 +671,14 @@ void IfStatement() throws YAPLException :
 {
 	Type type;
 	Boolean elseBlock = false;
+	int labelCountIf = 5 * incIfLabels;
 }
 {
   < IF > type = Expr()
   {
-   codegen.branchIfFalse(null, "L" + labelCount++);
+	incIfLabels++;	
+    
+   codegen.branchIfFalse(null, "L" + labelCountIf++);
     
    if(!(type instanceof BoolType)) {
 	throw new YAPLException(33, null, errorToken);
@@ -683,19 +686,19 @@ void IfStatement() throws YAPLException :
   }
   < THEN > StatementList()
   {
-    codegen.jump("L" + labelCount++);
+    codegen.jump("L" + labelCountIf++);
   }
   (
     {
-      codegen.assignLabel("L" + (labelCount-2));
+      codegen.assignLabel("L" + (labelCountIf-2));
       elseBlock = true;
     }
     < ELSE > StatementList()
   )?
   {
-    codegen.assignLabel("L" + (labelCount-1));
+    codegen.assignLabel("L" + (labelCountIf-1));
     if (!elseBlock) { 
-		codegen.assignLabel("L" + (labelCount-2));
+		codegen.assignLabel("L" + (labelCountIf-2));
 	}
   }
   < ENDIF >
@@ -704,11 +707,11 @@ void IfStatement() throws YAPLException :
 void WhileStatement() throws YAPLException :
 {
 	Type type;
-	int labelCountWhile = 100 * incLabels;
+	int labelCountWhile = 100 * incWhileLabels;
 }
 {
   {
-    incLabels++;
+    incWhileLabels++;
     codegen.assignLabel("L" + labelCountWhile++);
   }
   < WHILE > type = Expr()
@@ -1028,6 +1031,7 @@ void Procedure() throws YAPLException :
 void Program() throws YAPLException, IOException:
 {
   Token t;
+  boolean decl = false;
 }
 {
   < PROGRAM > t = < ident >
@@ -1043,13 +1047,31 @@ void Program() throws YAPLException, IOException:
     codegen.enterProc(sym);
   }
   (
-    { codegen.assignLabel("Decl"); } Decl() { codegen.jump("Begin_" + sym.getName()); }
-  | { codegen.jump("Decl"); } Procedure()
+    {
+      codegen.assignLabel("Decl");
+      decl = true;
+    }
+    Decl()
+    {
+      codegen.jump("Begin_" + sym.getName());
+    }
+  | {
+		codegen.jump("Procedures");
+    }
+    Procedure()
   )*
   {
     returnType = null;
   }
-  < BEGIN > { codegen.assignLabel("Begin_" + sym.getName()); } StatementList() < END > t = < ident > < dot >
+  < BEGIN >
+  {
+    codegen.assignLabel("Procedures");
+    if (decl) { 
+    	codegen.jump("Decl");	
+	}
+    codegen.assignLabel("Begin_" + sym.getName());
+  }
+  StatementList() < END > t = < ident > < dot >
   {
 	codegen.exitProc(sym);
 	codegen.writeObjectFile();
