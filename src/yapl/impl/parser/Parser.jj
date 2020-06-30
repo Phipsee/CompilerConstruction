@@ -628,9 +628,13 @@ void Assignment() throws YAPLException:
 
   }
   (
-    { codegen.loadVariable(sym); }
+    {
+      codegen.loadVariable(sym);
+    }
     l = Selector(sym.getType())
-    { selector = true; }
+    {
+      selector = true;
+    }
   )?
   t = < assignOp > type = Expr()
   {
@@ -656,13 +660,12 @@ void Assignment() throws YAPLException:
 				throw new YAPLException(29, null, t);
 			}  
 		}
-		 if(type instanceof RecordType) {
-                	RecordType other = (RecordType) lookup(11, null, identToken).getType();
-                	if(!((RecordType)type).equalField(other)) {
-                		throw new YAPLException(29, null, t);
-                	}
-                	
-                }
+		if(type instanceof RecordType) {
+             RecordType other = (RecordType) lookup(11, null, identToken).getType();
+             if(!((RecordType)type).equalField(other)) {
+               	throw new YAPLException(29, null, t);
+             }	
+        }
 	}    
   } 
 }
@@ -826,7 +829,9 @@ Type Type() throws YAPLException :
 }
 {
   type = NonArrayType()
-  { temp = new ArrayType(0, type); }
+  {
+    temp = new ArrayType(0, type);
+  }
   (< openingBrackets > < closingBrackets > { temp.incDim(); })*
   {
 	return temp.getDim() > 0 ? temp : type;
